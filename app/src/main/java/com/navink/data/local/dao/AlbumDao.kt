@@ -22,4 +22,7 @@ interface AlbumDao {
 
     @Query("SELECT * FROM AlbumEntity WHERE isStarred = 1 ORDER BY name ASC")
     fun starredAlbums(): Flow<List<AlbumEntity>>
+
+    @Query("SELECT * FROM AlbumEntity WHERE artistId = :artistId ORDER BY year ASC, name ASC")
+    suspend fun albumsForArtistOnce(artistId: String): List<AlbumEntity>
 }

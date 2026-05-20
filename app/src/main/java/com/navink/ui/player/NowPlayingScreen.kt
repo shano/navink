@@ -7,17 +7,13 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import coil.compose.AsyncImage
-import coil.request.ImageRequest
 import com.mudita.mmd.components.buttons.ButtonMMD
 import com.mudita.mmd.components.buttons.OutlinedButtonMMD
 
 @Composable
 fun NowPlayingScreen(
-    coverArtUrl: String?,
     onBack: () -> Unit,
     viewModel: PlayerViewModel = hiltViewModel(),
 ) {
@@ -26,7 +22,7 @@ fun NowPlayingScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.Black)
+            .background(Color.White)
             .padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
@@ -35,36 +31,22 @@ fun NowPlayingScreen(
             onClick = onBack,
             modifier = Modifier.align(Alignment.Start),
         ) {
-            Text("← Back", color = Color.White)
+            Text("← Back")
         }
-        Spacer(Modifier.height(24.dp))
-
-        AsyncImage(
-            model = ImageRequest.Builder(LocalContext.current)
-                .data(coverArtUrl)
-                .crossfade(false)
-                .build(),
-            contentDescription = null,
-            modifier = Modifier
-                .fillMaxWidth()
-                .aspectRatio(1f),
-        )
-        Spacer(Modifier.height(24.dp))
+        Spacer(Modifier.weight(1f))
 
         Text(
             text = state.currentTitle.ifBlank { "—" },
-            style = MaterialTheme.typography.headlineSmall,
-            color = Color.White,
+            style = MaterialTheme.typography.headlineMedium,
         )
+        Spacer(Modifier.height(8.dp))
         Text(
             text = state.currentArtist,
             style = MaterialTheme.typography.bodyLarge,
-            color = Color.White,
         )
         Text(
             text = state.currentAlbum,
             style = MaterialTheme.typography.bodyMedium,
-            color = Color.White,
         )
 
         Spacer(Modifier.weight(1f))
@@ -76,7 +58,7 @@ fun NowPlayingScreen(
             OutlinedButtonMMD(
                 onClick = { viewModel.previous() },
                 modifier = Modifier.weight(1f).height(80.dp),
-            ) { Text("⏮", color = Color.White) }
+            ) { Text("⏮") }
 
             ButtonMMD(
                 onClick = { viewModel.playPause() },
@@ -86,16 +68,16 @@ fun NowPlayingScreen(
             OutlinedButtonMMD(
                 onClick = { viewModel.next() },
                 modifier = Modifier.weight(1f).height(80.dp),
-            ) { Text("⏭", color = Color.White) }
+            ) { Text("⏭") }
         }
-        Spacer(Modifier.height(8.dp))
+        Spacer(Modifier.height(12.dp))
         val currentSongId = state.currentSongId
         if (currentSongId != null) {
             OutlinedButtonMMD(
                 onClick = { viewModel.downloadCurrentSong() },
                 modifier = Modifier.fillMaxWidth().height(56.dp),
             ) {
-                Text("Download", color = Color.White)
+                Text("Download")
             }
         }
         Spacer(Modifier.height(16.dp))

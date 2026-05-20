@@ -11,6 +11,7 @@ import com.navink.data.repository.SettingsRepository
 import com.navink.ui.browse.AlbumsScreen
 import com.navink.ui.browse.ArtistsScreen
 import com.navink.ui.browse.SongsScreen
+import com.navink.ui.downloads.DownloadsScreen
 import com.navink.ui.favourites.FavouritesScreen
 import com.navink.ui.player.MiniPlayer
 import com.navink.ui.player.NowPlayingScreen
@@ -26,11 +27,6 @@ fun NavGraph(
     val navController = rememberNavController()
     val playerViewModel: PlayerViewModel = hiltViewModel()
     val creds = remember { runBlocking { settingsRepository.getCredentials() } }
-
-    fun coverArtUrl(id: String?): String? {
-        if (id == null || creds.serverUrl.isBlank()) return null
-        return "${creds.serverUrl}/rest/getCoverArt.view?id=$id&u=${creds.username}&p=${creds.password}&v=1.16.1&c=navink"
-    }
 
     val miniPlayer: @Composable () -> Unit = {
         MiniPlayer(onTap = { navController.navigate("nowplaying") }, viewModel = playerViewModel)
@@ -50,6 +46,8 @@ fun NavGraph(
         composable("browse/artists") {
             ArtistsScreen(
                 onArtistClick = { artistId -> navController.navigate("browse/albums/$artistId") },
+                onNavigateToSearch = { navController.navigate("search") },
+                onNavigateToDownloads = { navController.navigate("downloads") },
                 miniPlayer = miniPlayer,
             )
         }
@@ -61,7 +59,6 @@ fun NavGraph(
             val artistId = back.arguments!!.getString("artistId")!!
             AlbumsScreen(
                 artistId = artistId,
-                coverArtUrl = ::coverArtUrl,
                 onAlbumClick = { albumId -> navController.navigate("browse/songs/$albumId") },
                 miniPlayer = miniPlayer,
             )
@@ -104,10 +101,19 @@ fun NavGraph(
             )
         }
 
+        composable("downloads") {
+            DownloadsScreen(
+                onSongClick = { songId, albumId ->
+                    playerViewModel.playSongFromAlbum(songId, albumId)
+                    navController.navigate("nowplaying")
+                },
+                onBack = { navController.popBackStack() },
+                miniPlayer = miniPlayer,
+            )
+        }
+
         composable("nowplaying") {
-            val playerState by playerViewModel.state.collectAsState()
             NowPlayingScreen(
-                coverArtUrl = coverArtUrl(playerState.currentCoverArtId),
                 onBack = { navController.popBackStack() },
                 viewModel = playerViewModel,
             )

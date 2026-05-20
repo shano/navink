@@ -38,9 +38,17 @@ class SettingsRepository @Inject constructor(
         }
     }
 
+    suspend fun getStorageLocation(): String =
+        dataStore.data.first()[STORAGE_KEY] ?: "external"
+
+    suspend fun saveStorageLocation(location: String) {
+        dataStore.edit { it[STORAGE_KEY] = location }
+    }
+
     companion object {
         val SERVER_URL_KEY = stringPreferencesKey("server_url")
         val USERNAME_KEY = stringPreferencesKey("username")
         val PASSWORD_KEY = stringPreferencesKey("password")
+        val STORAGE_KEY = stringPreferencesKey("storage_location")
     }
 }

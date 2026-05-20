@@ -23,5 +23,7 @@ class MusicRepository @Inject constructor(
     fun starredAlbums(): Flow<List<AlbumEntity>> = albumDao.starredAlbums()
     fun starredArtists(): Flow<List<ArtistEntity>> = artistDao.starredArtists()
     suspend fun songsForAlbumOnce(albumId: String): List<SongEntity> = songDao.songsForAlbumOnce(albumId)
+    suspend fun albumsForArtistOnce(artistId: String): List<AlbumEntity> = albumDao.albumsForArtistOnce(artistId)
     suspend fun songById(id: String): SongEntity? = songDao.songById(id)
+    fun downloadedSongs(): Flow<List<SongEntity>> = songDao.downloadedSongs()
 }

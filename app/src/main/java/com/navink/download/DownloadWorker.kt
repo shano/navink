@@ -36,7 +36,7 @@ class DownloadWorker @AssistedInject constructor(
 
             if (!response.isSuccessful) return@withContext Result.retry()
 
-            val dir = applicationContext.getExternalFilesDir("music")
+            val dir = resolveStorageDir()
                 ?: return@withContext Result.failure()
             dir.mkdirs()
             val file = File(dir, "$songId.mp3")
@@ -49,6 +49,17 @@ class DownloadWorker @AssistedInject constructor(
             Result.success()
         } catch (e: Exception) {
             Result.retry()
+        }
+    }
+
+    private suspend fun resolveStorageDir(): File? {
+        val location = settingsRepository.getStorageLocation()
+        return if (location == "internal") {
+            applicationContext.filesDir.resolve("music")
+        } else {
+            // "external": use last external dir — on devices with SD card this is the card
+            val dirs = applicationContext.getExternalFilesDirs("music")
+            dirs.lastOrNull() ?: applicationContext.getExternalFilesDir("music")
         }
     }
 

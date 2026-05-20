@@ -28,4 +28,7 @@ interface SongDao {
 
     @Query("SELECT * FROM SongEntity WHERE albumId = :albumId ORDER BY trackNumber ASC, title ASC")
     suspend fun songsForAlbumOnce(albumId: String): List<SongEntity>
+
+    @Query("SELECT * FROM SongEntity WHERE isDownloaded = 1 ORDER BY title ASC")
+    fun downloadedSongs(): Flow<List<SongEntity>>
 }
