@@ -47,11 +47,7 @@ class SyncRepository @Inject constructor(
         for (artistDto in allArtistDtos) {
             val artistDetail = service.getArtist(artistDto.id).response.artist ?: continue
             albumDao.upsertAll(artistDetail.album.map { it.toEntity(artistId = artistDto.id) })
-
-            for (albumDto in artistDetail.album) {
-                val albumDetail = service.getAlbum(albumDto.id).response.album ?: continue
-                songDao.upsertAll(albumDetail.song.map { it.toEntity(albumId = albumDto.id, artistId = artistDto.id) })
-            }
+            // Songs fetched lazily when user opens an album via syncArtist/syncAlbumSongs
         }
     }
 

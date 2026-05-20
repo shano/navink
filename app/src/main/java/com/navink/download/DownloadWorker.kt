@@ -27,8 +27,8 @@ class DownloadWorker @AssistedInject constructor(
         val songId = inputData.getString(KEY_SONG_ID) ?: return@withContext Result.failure()
         val creds = settingsRepository.getCredentials()
 
-        val url = "${creds.serverUrl}/rest/download.view?id=$songId" +
-            "&u=${creds.username}&p=${creds.password}&v=1.16.1&c=navink"
+        // Auth params added by SubsonicAuthInterceptor — don't duplicate them here
+        val url = "${creds.serverUrl}/rest/download.view?id=$songId"
 
         try {
             val request = Request.Builder().url(url).build()

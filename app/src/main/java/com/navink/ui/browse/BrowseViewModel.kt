@@ -31,6 +31,7 @@ data class BrowseUiState(
     val syncError: String? = null,
     val downloadMessage: String? = null,
     val storageLocation: String = "external",
+    val isOfflineMode: Boolean = false,
 )
 
 @HiltViewModel
@@ -42,6 +43,25 @@ class BrowseViewModel @Inject constructor(
 ) : ViewModel() {
     private val _state = MutableStateFlow(BrowseUiState())
     val state: StateFlow<BrowseUiState> = _state.asStateFlow()
+
+    init {
+        viewModelScope.launch {
+            musicRepository.downloadedSongs().collect { list ->
+                _state.value = _state.value.copy(downloadedSongs = list)
+            }
+        }
+        viewModelScope.launch {
+            _state.value = _state.value.copy(isOfflineMode = settingsRepository.getOfflineMode())
+        }
+    }
+
+    fun toggleOfflineMode() {
+        viewModelScope.launch {
+            val next = !_state.value.isOfflineMode
+            settingsRepository.saveOfflineMode(next)
+            _state.value = _state.value.copy(isOfflineMode = next)
+        }
+    }
 
     fun syncOnLaunch() {
         viewModelScope.launch {
@@ -92,14 +112,6 @@ class BrowseViewModel @Inject constructor(
         }
     }
 
-    fun observeDownloadedSongs() {
-        viewModelScope.launch {
-            musicRepository.downloadedSongs().collect { list ->
-                _state.value = _state.value.copy(downloadedSongs = list)
-            }
-        }
-    }
-
     fun downloadAlbum(albumId: String) {
         viewModelScope.launch {
             syncRepository.syncAlbumSongs(albumId)
@@ -115,6 +127,7 @@ class BrowseViewModel @Inject constructor(
 
     fun downloadArtist(artistId: String) {
         viewModelScope.launch {
+            syncRepository.syncArtist(artistId)
             val albums = musicRepository.albumsForArtistOnce(artistId)
             val wm = WorkManager.getInstance(context)
             var count = 0
