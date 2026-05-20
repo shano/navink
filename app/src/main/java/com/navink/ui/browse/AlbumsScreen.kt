@@ -14,6 +14,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.navink.data.local.entity.AlbumEntity
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AlbumsScreen(
     artistId: String,
@@ -23,52 +24,39 @@ fun AlbumsScreen(
 ) {
     val state by viewModel.state.collectAsState()
 
-    LaunchedEffect(artistId) { viewModel.observeAlbums(artistId) }
+    LaunchedEffect(artistId) {
+        viewModel.observeAlbums(artistId)
+        viewModel.syncArtistAlbums(artistId)
+    }
 
-    if (state.downloadMessage != null) {
-        Scaffold(
-            topBar = {
-                @OptIn(ExperimentalMaterial3Api::class)
+    Scaffold(
+        topBar = {
+            if (state.downloadMessage != null) {
                 TopAppBar(title = {
                     Text(state.downloadMessage!!, style = MaterialTheme.typography.bodySmall)
                 })
-            },
-            bottomBar = miniPlayer,
-        ) { padding ->
-            AlbumList(
-                albums = state.albums,
-                onAlbumClick = onAlbumClick,
-                onDownloadAlbum = { viewModel.downloadAlbum(it) },
-                padding = padding,
-            )
-        }
-    } else {
-        Scaffold(bottomBar = miniPlayer) { padding ->
-            AlbumList(
-                albums = state.albums,
-                onAlbumClick = onAlbumClick,
-                onDownloadAlbum = { viewModel.downloadAlbum(it) },
-                padding = padding,
-            )
-        }
-    }
-}
-
-@Composable
-private fun AlbumList(
-    albums: List<AlbumEntity>,
-    onAlbumClick: (String) -> Unit,
-    onDownloadAlbum: (String) -> Unit,
-    padding: PaddingValues,
-) {
-    LazyColumn(Modifier.fillMaxSize().padding(padding)) {
-        items(albums, key = { it.id }) { album ->
-            AlbumRow(
-                album = album,
-                onClick = { onAlbumClick(album.id) },
-                onLongClick = { onDownloadAlbum(album.id) },
-            )
-            HorizontalDivider()
+            }
+        },
+        bottomBar = miniPlayer,
+    ) { padding ->
+        when {
+            state.isLoadingAlbums && state.albums.isEmpty() -> {
+                Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator()
+                }
+            }
+            else -> {
+                LazyColumn(Modifier.fillMaxSize().padding(padding)) {
+                    items(state.albums, key = { it.id }) { album ->
+                        AlbumRow(
+                            album = album,
+                            onClick = { onAlbumClick(album.id) },
+                            onLongClick = { viewModel.downloadAlbum(album.id) },
+                        )
+                        HorizontalDivider()
+                    }
+                }
+            }
         }
     }
 }

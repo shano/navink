@@ -27,6 +27,7 @@ data class BrowseUiState(
     val songs: List<SongEntity> = emptyList(),
     val downloadedSongs: List<SongEntity> = emptyList(),
     val isSyncing: Boolean = false,
+    val isLoadingAlbums: Boolean = false,
     val syncError: String? = null,
     val downloadMessage: String? = null,
     val storageLocation: String = "external",
@@ -67,6 +68,18 @@ class BrowseViewModel @Inject constructor(
         viewModelScope.launch {
             musicRepository.albumsForArtist(artistId).collect { list ->
                 _state.value = _state.value.copy(albums = list)
+            }
+        }
+    }
+
+    fun syncArtistAlbums(artistId: String) {
+        viewModelScope.launch {
+            _state.value = _state.value.copy(isLoadingAlbums = true)
+            try {
+                syncRepository.syncArtist(artistId)
+            } catch (_: Exception) {
+            } finally {
+                _state.value = _state.value.copy(isLoadingAlbums = false)
             }
         }
     }
