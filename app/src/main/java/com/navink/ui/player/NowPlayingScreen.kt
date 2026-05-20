@@ -88,6 +88,16 @@ fun NowPlayingScreen(
                 modifier = Modifier.weight(1f).height(80.dp),
             ) { Text("⏭", color = Color.White) }
         }
+        Spacer(Modifier.height(8.dp))
+        val currentSongId = state.currentSongId
+        if (currentSongId != null) {
+            OutlinedButtonMMD(
+                onClick = { viewModel.downloadCurrentSong() },
+                modifier = Modifier.fillMaxWidth().height(56.dp),
+            ) {
+                Text("Download", color = Color.White)
+            }
+        }
         Spacer(Modifier.height(16.dp))
     }
 }

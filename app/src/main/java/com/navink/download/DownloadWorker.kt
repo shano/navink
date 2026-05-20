@@ -1,0 +1,58 @@
+package com.navink.download
+
+import android.content.Context
+import androidx.hilt.work.HiltWorker
+import androidx.work.CoroutineWorker
+import androidx.work.WorkerParameters
+import com.navink.data.local.dao.SongDao
+import com.navink.data.repository.SettingsRepository
+import dagger.assisted.Assisted
+import dagger.assisted.AssistedInject
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import java.io.File
+
+@HiltWorker
+class DownloadWorker @AssistedInject constructor(
+    @Assisted appContext: Context,
+    @Assisted workerParams: WorkerParameters,
+    private val settingsRepository: SettingsRepository,
+    private val songDao: SongDao,
+    private val okHttpClient: OkHttpClient,
+) : CoroutineWorker(appContext, workerParams) {
+
+    override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
+        val songId = inputData.getString(KEY_SONG_ID) ?: return@withContext Result.failure()
+        val creds = settingsRepository.getCredentials()
+
+        val url = "${creds.serverUrl}/rest/download.view?id=$songId" +
+            "&u=${creds.username}&p=${creds.password}&v=1.16.1&c=navink"
+
+        try {
+            val request = Request.Builder().url(url).build()
+            val response = okHttpClient.newCall(request).execute()
+
+            if (!response.isSuccessful) return@withContext Result.retry()
+
+            val dir = applicationContext.getExternalFilesDir("music")
+                ?: return@withContext Result.failure()
+            dir.mkdirs()
+            val file = File(dir, "$songId.mp3")
+
+            response.body?.byteStream()?.use { input ->
+                file.outputStream().use { output -> input.copyTo(output) }
+            }
+
+            songDao.setDownloaded(songId, file.absolutePath)
+            Result.success()
+        } catch (e: Exception) {
+            Result.retry()
+        }
+    }
+
+    companion object {
+        const val KEY_SONG_ID = "song_id"
+    }
+}

@@ -2,6 +2,7 @@ package com.navink.ui.player
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.navink.data.repository.DownloadRepository
 import com.navink.data.repository.MusicRepository
 import com.navink.data.repository.SettingsRepository
 import com.navink.player.PlayerController
@@ -19,6 +20,7 @@ class PlayerViewModel @Inject constructor(
     private val playerController: PlayerController,
     private val musicRepository: MusicRepository,
     private val settingsRepository: SettingsRepository,
+    private val downloadRepository: DownloadRepository,
 ) : ViewModel() {
     val state: StateFlow<PlayerState> = playerController.state
         .stateIn(viewModelScope, SharingStarted.Eagerly, playerController.state.value)
@@ -35,6 +37,11 @@ class PlayerViewModel @Inject constructor(
         val creds = runBlocking { settingsRepository.getCredentials() }
         if (creds.serverUrl.isBlank()) return null
         return "${creds.serverUrl}/rest/getCoverArt.view?id=$coverArtId&u=${creds.username}&p=${creds.password}&v=1.16.1&c=navink"
+    }
+
+    fun downloadCurrentSong() {
+        val songId = state.value.currentSongId ?: return
+        downloadRepository.downloadSong(songId)
     }
 
     fun playPause() = playerController.playPause()
