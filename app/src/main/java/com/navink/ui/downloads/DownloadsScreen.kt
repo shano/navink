@@ -27,7 +27,6 @@ fun DownloadsScreen(
     val state by viewModel.state.collectAsState()
 
     LaunchedEffect(Unit) {
-        viewModel.observeDownloadedSongs()
         viewModel.loadStorageLocation()
     }
 

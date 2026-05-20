@@ -10,6 +10,7 @@ import androidx.navigation.navArgument
 import com.navink.data.repository.SettingsRepository
 import com.navink.ui.browse.AlbumsScreen
 import com.navink.ui.browse.ArtistsScreen
+import com.navink.ui.browse.BrowseViewModel
 import com.navink.ui.browse.SongsScreen
 import com.navink.ui.downloads.DownloadsScreen
 import com.navink.ui.favourites.FavouritesScreen
@@ -26,6 +27,7 @@ fun NavGraph(
 ) {
     val navController = rememberNavController()
     val playerViewModel: PlayerViewModel = hiltViewModel()
+    val browseViewModel: BrowseViewModel = hiltViewModel()
     val creds = remember { runBlocking { settingsRepository.getCredentials() } }
 
     val miniPlayer: @Composable () -> Unit = {
@@ -49,6 +51,7 @@ fun NavGraph(
                 onNavigateToSearch = { navController.navigate("search") },
                 onNavigateToDownloads = { navController.navigate("downloads") },
                 miniPlayer = miniPlayer,
+                viewModel = browseViewModel,
             )
         }
 
@@ -62,6 +65,7 @@ fun NavGraph(
                 onAlbumClick = { albumId -> navController.navigate("browse/songs/$albumId") },
                 onBack = { navController.navigateUp() },
                 miniPlayer = miniPlayer,
+                viewModel = browseViewModel,
             )
         }
 
@@ -78,6 +82,7 @@ fun NavGraph(
                 },
                 onBack = { navController.navigateUp() },
                 miniPlayer = miniPlayer,
+                viewModel = browseViewModel,
             )
         }
 
@@ -89,6 +94,7 @@ fun NavGraph(
                 },
                 onAlbumClick = { albumId -> navController.navigate("browse/songs/$albumId") },
                 onArtistClick = { artistId -> navController.navigate("browse/albums/$artistId") },
+                onBack = { navController.navigateUp() },
                 miniPlayer = miniPlayer,
             )
         }

@@ -3,6 +3,7 @@ package com.navink.data.repository
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import kotlinx.coroutines.flow.first
 import javax.inject.Inject
@@ -45,10 +46,18 @@ class SettingsRepository @Inject constructor(
         dataStore.edit { it[STORAGE_KEY] = location }
     }
 
+    suspend fun getOfflineMode(): Boolean =
+        dataStore.data.first()[OFFLINE_MODE_KEY] ?: false
+
+    suspend fun saveOfflineMode(offline: Boolean) {
+        dataStore.edit { it[OFFLINE_MODE_KEY] = offline }
+    }
+
     companion object {
         val SERVER_URL_KEY = stringPreferencesKey("server_url")
         val USERNAME_KEY = stringPreferencesKey("username")
         val PASSWORD_KEY = stringPreferencesKey("password")
         val STORAGE_KEY = stringPreferencesKey("storage_location")
+        val OFFLINE_MODE_KEY = booleanPreferencesKey("offline_mode")
     }
 }

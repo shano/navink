@@ -24,7 +24,15 @@ fun SongsScreen(
 ) {
     val state by viewModel.state.collectAsState()
 
-    LaunchedEffect(albumId) { viewModel.observeSongs(albumId) }
+    LaunchedEffect(albumId) {
+        if (!state.isOfflineMode) viewModel.observeSongs(albumId)
+    }
+
+    val displayedSongs = if (state.isOfflineMode) {
+        state.downloadedSongs.filter { it.albumId == albumId }
+    } else {
+        state.songs
+    }
 
     Scaffold(
         topBar = {
@@ -38,7 +46,7 @@ fun SongsScreen(
         bottomBar = miniPlayer,
     ) { padding ->
         LazyColumn(Modifier.fillMaxSize().padding(padding)) {
-            items(state.songs, key = { it.id }) { song ->
+            items(displayedSongs, key = { it.id }) { song ->
                 SongRow(
                     song = song,
                     onClick = { onSongClick(song.id, albumId) },

@@ -27,7 +27,14 @@ fun ArtistsScreen(
 
     LaunchedEffect(Unit) {
         viewModel.observeArtists()
-        viewModel.syncOnLaunch()
+        if (!state.isOfflineMode) viewModel.syncOnLaunch()
+    }
+
+    val displayedArtists = if (state.isOfflineMode) {
+        val offlineArtistIds = state.downloadedSongs.map { it.artistId }.toSet()
+        state.artists.filter { it.id in offlineArtistIds }
+    } else {
+        state.artists
     }
 
     Scaffold(
@@ -35,26 +42,35 @@ fun ArtistsScreen(
             TopAppBar(
                 title = { Text("Library") },
                 actions = {
-                    TextButton(onClick = onNavigateToSearch) { Text("🔍") }
-                    TextButton(onClick = onNavigateToDownloads) { Text("↓") }
-                    if (!state.isSyncing) {
-                        TextButton(onClick = { viewModel.syncOnLaunch() }) { Text("↻") }
-                    } else {
-                        CircularProgressIndicator(modifier = Modifier.size(24.dp))
+                    TextButton(onClick = { viewModel.toggleOfflineMode() }) {
+                        Text(if (state.isOfflineMode) "Online" else "Offline")
+                    }
+                    if (!state.isOfflineMode) {
+                        TextButton(onClick = onNavigateToSearch) { Text("🔍") }
+                        TextButton(onClick = onNavigateToDownloads) { Text("↓") }
+                        if (!state.isSyncing) {
+                            TextButton(onClick = { viewModel.syncOnLaunch() }) { Text("↻") }
+                        } else {
+                            CircularProgressIndicator(modifier = Modifier.size(24.dp))
+                        }
                     }
                 }
             )
         },
         bottomBar = miniPlayer,
     ) { padding ->
-        if (state.isSyncing && state.artists.isEmpty()) {
+        if (!state.isOfflineMode && state.isSyncing && state.artists.isEmpty()) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(padding),
                 contentAlignment = Alignment.Center,
             ) {
-                CircularProgressIndicator()
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    CircularProgressIndicator()
+                    Spacer(Modifier.height(12.dp))
+                    Text("Syncing library…", style = MaterialTheme.typography.bodySmall)
+                }
             }
         } else {
             LazyColumn(Modifier.fillMaxSize().padding(padding)) {
@@ -75,11 +91,11 @@ fun ArtistsScreen(
                         )
                     }
                 }
-                items(state.artists, key = { it.id }) { artist ->
+                items(displayedArtists, key = { it.id }) { artist ->
                     ArtistRow(
                         artist = artist,
                         onClick = { onArtistClick(artist.id) },
-                        onLongClick = { viewModel.downloadArtist(artist.id) },
+                        onLongClick = { if (!state.isOfflineMode) viewModel.downloadArtist(artist.id) },
                     )
                     HorizontalDivider()
                 }

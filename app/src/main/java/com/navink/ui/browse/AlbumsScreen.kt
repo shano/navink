@@ -28,7 +28,16 @@ fun AlbumsScreen(
 
     LaunchedEffect(artistId) {
         viewModel.observeAlbums(artistId)
-        viewModel.syncArtistAlbums(artistId)
+        if (!state.isOfflineMode) viewModel.syncArtistAlbums(artistId)
+    }
+
+    val displayedAlbums = if (state.isOfflineMode) {
+        val offlineAlbumIds = state.downloadedSongs
+            .filter { it.artistId == artistId }
+            .map { it.albumId }.toSet()
+        state.albums.filter { it.id in offlineAlbumIds }
+    } else {
+        state.albums
     }
 
     LaunchedEffect(state.downloadMessage) {
@@ -59,7 +68,7 @@ fun AlbumsScreen(
             }
             else -> {
                 LazyColumn(Modifier.fillMaxSize().padding(padding)) {
-                    items(state.albums, key = { it.id }) { album ->
+                    items(displayedAlbums, key = { it.id }) { album ->
                         AlbumRow(
                             album = album,
                             onClick = { onAlbumClick(album.id) },
