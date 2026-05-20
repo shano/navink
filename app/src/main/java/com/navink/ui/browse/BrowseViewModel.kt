@@ -114,7 +114,9 @@ class BrowseViewModel @Inject constructor(
 
     fun downloadAlbum(albumId: String) {
         viewModelScope.launch {
-            syncRepository.syncAlbumSongs(albumId)
+            try {
+                syncRepository.syncAlbumSongs(albumId)
+            } catch (_: Exception) {}
             val songs = musicRepository.songsForAlbumOnce(albumId)
             val wm = WorkManager.getInstance(context)
             songs.forEach { song ->
@@ -127,7 +129,9 @@ class BrowseViewModel @Inject constructor(
 
     fun downloadArtist(artistId: String) {
         viewModelScope.launch {
-            syncRepository.syncArtist(artistId)
+            try {
+                syncRepository.syncArtist(artistId)
+            } catch (_: Exception) {}
             val albums = musicRepository.albumsForArtistOnce(artistId)
             val wm = WorkManager.getInstance(context)
             var count = 0
