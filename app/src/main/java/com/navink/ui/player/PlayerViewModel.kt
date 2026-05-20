@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
@@ -30,6 +31,9 @@ class PlayerViewModel @Inject constructor(
     private val _isDownloadingCurrentSong = MutableStateFlow(false)
     val isDownloadingCurrentSong: StateFlow<Boolean> = _isDownloadingCurrentSong.asStateFlow()
 
+    private val _isCurrentSongDownloaded = MutableStateFlow(false)
+    val isCurrentSongDownloaded: StateFlow<Boolean> = _isCurrentSongDownloaded.asStateFlow()
+
     init {
         viewModelScope.launch {
             var prevSongId: String? = null
@@ -39,6 +43,11 @@ class PlayerViewModel @Inject constructor(
                     prevSongId = s.currentSongId
                 }
             }
+        }
+        viewModelScope.launch {
+            combine(playerController.state, musicRepository.downloadedSongs()) { playerState, downloaded ->
+                downloaded.any { it.id == playerState.currentSongId }
+            }.collect { _isCurrentSongDownloaded.value = it }
         }
     }
 

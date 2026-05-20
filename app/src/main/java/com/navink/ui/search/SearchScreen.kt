@@ -16,17 +16,29 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.mudita.mmd.components.text_field.TextFieldMMD
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SearchScreen(
     onSongClick: (songId: String, albumId: String) -> Unit,
     onAlbumClick: (albumId: String) -> Unit,
     onArtistClick: (artistId: String) -> Unit,
+    onBack: () -> Unit,
     miniPlayer: @Composable () -> Unit,
     viewModel: SearchViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsState()
 
-    Scaffold(bottomBar = miniPlayer) { padding ->
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Search") },
+                navigationIcon = {
+                    TextButton(onClick = onBack) { Text("←") }
+                },
+            )
+        },
+        bottomBar = miniPlayer,
+    ) { padding ->
         Column(Modifier.fillMaxSize().padding(padding).padding(16.dp)) {
             TextFieldMMD(
                 value = state.query,

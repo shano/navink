@@ -19,6 +19,7 @@ fun NowPlayingScreen(
 ) {
     val state by viewModel.state.collectAsState()
     val isDownloading by viewModel.isDownloadingCurrentSong.collectAsState()
+    val isDownloaded by viewModel.isCurrentSongDownloaded.collectAsState()
 
     Column(
         modifier = Modifier
@@ -72,7 +73,7 @@ fun NowPlayingScreen(
             ) { Text("⏭") }
         }
         Spacer(Modifier.height(12.dp))
-        if (state.currentSongId != null) {
+        if (state.currentSongId != null && !isDownloaded) {
             OutlinedButtonMMD(
                 onClick = { if (!isDownloading) viewModel.downloadCurrentSong() },
                 modifier = Modifier.fillMaxWidth().height(56.dp),
