@@ -42,8 +42,6 @@ class BrowseViewModel @Inject constructor(
     private val _state = MutableStateFlow(BrowseUiState())
     val state: StateFlow<BrowseUiState> = _state.asStateFlow()
 
-    init { syncOnLaunch() }
-
     fun syncOnLaunch() {
         viewModelScope.launch {
             _state.value = _state.value.copy(isSyncing = true, syncError = null)

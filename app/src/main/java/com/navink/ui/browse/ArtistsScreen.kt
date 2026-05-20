@@ -25,7 +25,10 @@ fun ArtistsScreen(
 ) {
     val state by viewModel.state.collectAsState()
 
-    LaunchedEffect(Unit) { viewModel.observeArtists() }
+    LaunchedEffect(Unit) {
+        viewModel.observeArtists()
+        viewModel.syncOnLaunch()
+    }
 
     Scaffold(
         topBar = {
