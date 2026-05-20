@@ -8,8 +8,10 @@ import com.navink.data.repository.SettingsRepository
 import com.navink.player.PlayerController
 import com.navink.player.PlayerState
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
@@ -24,6 +26,21 @@ class PlayerViewModel @Inject constructor(
 ) : ViewModel() {
     val state: StateFlow<PlayerState> = playerController.state
         .stateIn(viewModelScope, SharingStarted.Eagerly, playerController.state.value)
+
+    private val _isDownloadingCurrentSong = MutableStateFlow(false)
+    val isDownloadingCurrentSong: StateFlow<Boolean> = _isDownloadingCurrentSong.asStateFlow()
+
+    init {
+        viewModelScope.launch {
+            var prevSongId: String? = null
+            playerController.state.collect { s ->
+                if (s.currentSongId != prevSongId) {
+                    _isDownloadingCurrentSong.value = false
+                    prevSongId = s.currentSongId
+                }
+            }
+        }
+    }
 
     fun playSongFromAlbum(songId: String, albumId: String) {
         viewModelScope.launch {
@@ -41,6 +58,7 @@ class PlayerViewModel @Inject constructor(
 
     fun downloadCurrentSong() {
         val songId = state.value.currentSongId ?: return
+        _isDownloadingCurrentSong.value = true
         downloadRepository.downloadSong(songId)
     }
 

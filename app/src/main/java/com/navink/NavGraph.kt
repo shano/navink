@@ -60,6 +60,7 @@ fun NavGraph(
             AlbumsScreen(
                 artistId = artistId,
                 onAlbumClick = { albumId -> navController.navigate("browse/songs/$albumId") },
+                onBack = { navController.popBackStack() },
                 miniPlayer = miniPlayer,
             )
         }
@@ -75,6 +76,7 @@ fun NavGraph(
                     playerViewModel.playSongFromAlbum(songId, aId)
                     navController.navigate("nowplaying")
                 },
+                onBack = { navController.popBackStack() },
                 miniPlayer = miniPlayer,
             )
         }

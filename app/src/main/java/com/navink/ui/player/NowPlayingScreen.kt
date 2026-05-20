@@ -18,6 +18,7 @@ fun NowPlayingScreen(
     viewModel: PlayerViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsState()
+    val isDownloading by viewModel.isDownloadingCurrentSong.collectAsState()
 
     Column(
         modifier = Modifier
@@ -71,13 +72,12 @@ fun NowPlayingScreen(
             ) { Text("⏭") }
         }
         Spacer(Modifier.height(12.dp))
-        val currentSongId = state.currentSongId
-        if (currentSongId != null) {
+        if (state.currentSongId != null) {
             OutlinedButtonMMD(
-                onClick = { viewModel.downloadCurrentSong() },
+                onClick = { if (!isDownloading) viewModel.downloadCurrentSong() },
                 modifier = Modifier.fillMaxWidth().height(56.dp),
             ) {
-                Text("Download")
+                Text(if (isDownloading) "Downloading…" else "Download")
             }
         }
         Spacer(Modifier.height(16.dp))

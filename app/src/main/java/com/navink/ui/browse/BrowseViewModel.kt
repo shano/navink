@@ -108,7 +108,7 @@ class BrowseViewModel @Inject constructor(
                 val data = workDataOf(DownloadWorker.KEY_SONG_ID to song.id)
                 wm.enqueue(OneTimeWorkRequestBuilder<DownloadWorker>().setInputData(data).build())
             }
-            _state.value = _state.value.copy(downloadMessage = "Queued ${songs.size} tracks")
+            _state.value = _state.value.copy(downloadMessage = "Downloading ${songs.size} tracks…")
         }
     }
 
@@ -124,8 +124,12 @@ class BrowseViewModel @Inject constructor(
                     count++
                 }
             }
-            _state.value = _state.value.copy(downloadMessage = "Queued $count tracks")
+            _state.value = _state.value.copy(downloadMessage = "Downloading $count tracks…")
         }
+    }
+
+    fun clearDownloadMessage() {
+        _state.value = _state.value.copy(downloadMessage = null)
     }
 
     fun loadStorageLocation() {

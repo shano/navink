@@ -13,12 +13,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.navink.data.local.entity.AlbumEntity
+import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AlbumsScreen(
     artistId: String,
     onAlbumClick: (String) -> Unit,
+    onBack: () -> Unit,
     miniPlayer: @Composable () -> Unit,
     viewModel: BrowseViewModel = hiltViewModel(),
 ) {
@@ -29,13 +31,23 @@ fun AlbumsScreen(
         viewModel.syncArtistAlbums(artistId)
     }
 
+    LaunchedEffect(state.downloadMessage) {
+        if (state.downloadMessage != null) {
+            delay(3000)
+            viewModel.clearDownloadMessage()
+        }
+    }
+
     Scaffold(
         topBar = {
-            if (state.downloadMessage != null) {
-                TopAppBar(title = {
-                    Text(state.downloadMessage!!, style = MaterialTheme.typography.bodySmall)
-                })
-            }
+            TopAppBar(
+                title = {
+                    Text(state.downloadMessage ?: "Albums")
+                },
+                navigationIcon = {
+                    TextButton(onClick = onBack) { Text("←") }
+                },
+            )
         },
         bottomBar = miniPlayer,
     ) { padding ->

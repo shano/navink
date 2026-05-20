@@ -13,10 +13,12 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.navink.data.local.entity.SongEntity
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SongsScreen(
     albumId: String,
     onSongClick: (songId: String, albumId: String) -> Unit,
+    onBack: () -> Unit,
     miniPlayer: @Composable () -> Unit,
     viewModel: BrowseViewModel = hiltViewModel(),
 ) {
@@ -24,7 +26,17 @@ fun SongsScreen(
 
     LaunchedEffect(albumId) { viewModel.observeSongs(albumId) }
 
-    Scaffold(bottomBar = miniPlayer) { padding ->
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Songs") },
+                navigationIcon = {
+                    TextButton(onClick = onBack) { Text("←") }
+                },
+            )
+        },
+        bottomBar = miniPlayer,
+    ) { padding ->
         LazyColumn(Modifier.fillMaxSize().padding(padding)) {
             items(state.songs, key = { it.id }) { song ->
                 SongRow(
