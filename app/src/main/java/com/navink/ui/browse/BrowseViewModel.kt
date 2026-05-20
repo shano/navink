@@ -102,6 +102,7 @@ class BrowseViewModel @Inject constructor(
 
     fun downloadAlbum(albumId: String) {
         viewModelScope.launch {
+            syncRepository.syncAlbumSongs(albumId)
             val songs = musicRepository.songsForAlbumOnce(albumId)
             val wm = WorkManager.getInstance(context)
             songs.forEach { song ->

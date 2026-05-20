@@ -60,7 +60,7 @@ fun NavGraph(
             AlbumsScreen(
                 artistId = artistId,
                 onAlbumClick = { albumId -> navController.navigate("browse/songs/$albumId") },
-                onBack = { navController.popBackStack() },
+                onBack = { navController.navigateUp() },
                 miniPlayer = miniPlayer,
             )
         }
@@ -76,7 +76,7 @@ fun NavGraph(
                     playerViewModel.playSongFromAlbum(songId, aId)
                     navController.navigate("nowplaying")
                 },
-                onBack = { navController.popBackStack() },
+                onBack = { navController.navigateUp() },
                 miniPlayer = miniPlayer,
             )
         }
@@ -109,20 +109,20 @@ fun NavGraph(
                     playerViewModel.playSongFromAlbum(songId, albumId)
                     navController.navigate("nowplaying")
                 },
-                onBack = { navController.popBackStack() },
+                onBack = { navController.navigateUp() },
                 miniPlayer = miniPlayer,
             )
         }
 
         composable("nowplaying") {
             NowPlayingScreen(
-                onBack = { navController.popBackStack() },
+                onBack = { navController.navigateUp() },
                 viewModel = playerViewModel,
             )
         }
 
         composable("settings/edit") {
-            SettingsScreen(onConnected = { navController.popBackStack() })
+            SettingsScreen(onConnected = { navController.navigateUp() })
         }
     }
 }

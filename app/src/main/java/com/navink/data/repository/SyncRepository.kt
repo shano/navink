@@ -20,6 +20,14 @@ class SyncRepository @Inject constructor(
     private val albumDao: AlbumDao,
     private val songDao: SongDao,
 ) {
+    suspend fun syncAlbumSongs(albumId: String) {
+        val album = albumDao.albumById(albumId) ?: return
+        val albumDetail = service.getAlbum(albumId).response.album ?: return
+        songDao.upsertAll(albumDetail.song.map {
+            it.toEntity(albumId = albumId, artistId = album.artistId)
+        })
+    }
+
     suspend fun syncArtist(artistId: String) {
         val artistDetail = service.getArtist(artistId).response.artist ?: return
         albumDao.upsertAll(artistDetail.album.map { it.toEntity(artistId = artistId) })
