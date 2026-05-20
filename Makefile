@@ -43,7 +43,7 @@ emulator:
 	  || { $(EMULATOR) -avd $(AVD_NAME) -no-snapshot-save -no-audio & \
 	       echo "Waiting for boot (~60s)..."; \
 	       $(ADB) wait-for-device; \
-	       $(ADB) shell 'until [ $$(getprop sys.boot_completed) = 1 ]; do sleep 2; done'; \
+	       $(ADB) shell 'until [ "$$(getprop sys.boot_completed)" = "1" ]; do sleep 2; done'; \
 	       echo "Emulator ready"; }
 
 install: build
