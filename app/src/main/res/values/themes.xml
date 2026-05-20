@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- ThemeMMD handles all visual theming in Compose. This base theme only
+         needs to satisfy the Activity window before Compose takes over. -->
+    <style name="Theme.Navink" parent="android:Theme.Material.NoActionBar" />
+</resources>

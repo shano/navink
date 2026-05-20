@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Simple music note shape for the launcher icon -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:fillColor="#000000"
+        android:pathData="M42,72 L42,40 L72,34 L72,58 Q66,54 60,56 Q50,59 50,67 Q50,76 60,74 Q70,72 70,63 L70,30 L44,36 L44,76 Q38,72 32,74 Q22,77 22,85 Q22,94 32,92 Q42,90 42,81 Z" />
+</vector>
