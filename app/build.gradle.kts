@@ -96,6 +96,7 @@ dependencies {
 
     // Coroutines
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-guava:1.7.3")
 
     // Networking — Subsonic/Navidrome REST API
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
