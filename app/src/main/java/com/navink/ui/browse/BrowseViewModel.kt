@@ -15,6 +15,7 @@ import com.navink.data.repository.SyncRepository
 import com.navink.download.DownloadWorker
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -76,16 +77,21 @@ class BrowseViewModel @Inject constructor(
         }
     }
 
+    private var artistsJob: Job? = null
     fun observeArtists() {
-        viewModelScope.launch {
+        artistsJob?.cancel()
+        artistsJob = viewModelScope.launch {
             musicRepository.allArtists().collect { list ->
                 _state.value = _state.value.copy(artists = list)
             }
         }
     }
 
+    private var albumsJob: Job? = null
     fun observeAlbums(artistId: String) {
-        viewModelScope.launch {
+        albumsJob?.cancel()
+        _state.value = _state.value.copy(albums = emptyList())
+        albumsJob = viewModelScope.launch {
             musicRepository.albumsForArtist(artistId).collect { list ->
                 _state.value = _state.value.copy(albums = list)
             }
@@ -104,8 +110,11 @@ class BrowseViewModel @Inject constructor(
         }
     }
 
+    private var songsJob: Job? = null
     fun observeSongs(albumId: String) {
-        viewModelScope.launch {
+        songsJob?.cancel()
+        _state.value = _state.value.copy(songs = emptyList())
+        songsJob = viewModelScope.launch {
             musicRepository.songsForAlbum(albumId).collect { list ->
                 _state.value = _state.value.copy(songs = list)
             }

@@ -40,15 +40,22 @@ fun SearchScreen(
         bottomBar = miniPlayer,
     ) { padding ->
         Column(Modifier.fillMaxSize().padding(padding).padding(16.dp)) {
-            TextFieldMMD(
-                value = state.query,
-                onValueChange = viewModel::onQueryChange,
-                label = { Text("Search") },
+            Row(
                 modifier = Modifier.fillMaxWidth(),
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-                keyboardActions = KeyboardActions(onSearch = { viewModel.search() }),
-            )
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                TextFieldMMD(
+                    value = state.query,
+                    onValueChange = viewModel::onQueryChange,
+                    label = { Text("Search") },
+                    modifier = Modifier.weight(1f),
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                    keyboardActions = KeyboardActions(onSearch = { viewModel.search() }),
+                )
+                TextButton(onClick = { viewModel.search() }) { Text("Go") }
+            }
             Spacer(Modifier.height(8.dp))
 
             if (state.isLoading) {
