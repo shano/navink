@@ -122,12 +122,14 @@ dependencies {
 
     // Unit tests
     testImplementation("junit:junit:4.13.2")
-    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.7.3")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.8.1")
     testImplementation("androidx.arch.core:core-testing:2.2.0")
     testImplementation("io.mockk:mockk:1.13.8")
-    testImplementation("org.robolectric:robolectric:4.11.1")
+    testImplementation("org.robolectric:robolectric:4.12.2")
     testImplementation("androidx.test:core:1.5.0")
     testImplementation("androidx.test.ext:junit:1.1.5")
+    testImplementation("androidx.room:room-testing:2.6.1")
+    testImplementation(kotlin("test"))
 
     // Instrumented tests
     androidTestImplementation("androidx.test.ext:junit:1.1.5")
