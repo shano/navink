@@ -14,6 +14,7 @@ import javax.inject.Inject
 data class FavouritesUiState(
     val songs: List<SongEntity> = emptyList(),
     val isSyncing: Boolean = false,
+    val error: String? = null,
 )
 
 @HiltViewModel
@@ -42,8 +43,16 @@ class FavouritesViewModel @Inject constructor(
 
     fun toggleStar(songId: String, isCurrentlyStarred: Boolean) {
         viewModelScope.launch {
-            if (isCurrentlyStarred) favouritesRepository.unstarSong(songId)
-            else favouritesRepository.starSong(songId)
+            try {
+                if (isCurrentlyStarred) favouritesRepository.unstarSong(songId)
+                else favouritesRepository.starSong(songId)
+            } catch (e: Exception) {
+                _state.value = _state.value.copy(error = "Could not update star: ${e.message}")
+            }
         }
+    }
+
+    fun clearError() {
+        _state.value = _state.value.copy(error = null)
     }
 }
