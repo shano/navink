@@ -13,10 +13,11 @@ SYSIMG   := system-images;android-36.1;google_apis_playstore;x86_64
 AVD_NAME := navink
 APK      := app/build/outputs/apk/debug/app-debug.apk
 
-.PHONY: help build deploy avd emulator install run
+.PHONY: help build test deploy avd emulator install run
 
 help:
 	@echo "make build      build debug APK"
+	@echo "make test       run unit tests (TESTS=<class filter> optional)"
 	@echo "make deploy     build + print sideload path"
 	@echo "make avd        create '$(AVD_NAME)' AVD (idempotent)"
 	@echo "make emulator   start emulator, wait for boot"
@@ -25,6 +26,9 @@ help:
 
 build:
 	$(GRADLEW) assembleDebug
+
+test:
+	$(GRADLEW) testDebugUnitTest $(if $(TESTS),--tests "$(TESTS)")
 
 deploy: build
 	@echo "APK: $$(pwd)/$(APK)"
