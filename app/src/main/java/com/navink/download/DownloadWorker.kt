@@ -65,5 +65,7 @@ class DownloadWorker @AssistedInject constructor(
 
     companion object {
         const val KEY_SONG_ID = "song_id"
+        const val KEY_SONG_TITLE = "song_title"
+        const val TAG = "navink_download"
     }
 }

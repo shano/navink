@@ -91,9 +91,15 @@ fun ArtistsScreen(
                         )
                     }
                 }
+                val offlineAlbumCountByArtist = if (state.isOfflineMode) {
+                    state.downloadedSongs
+                        .groupBy { it.artistId }
+                        .mapValues { (_, songs) -> songs.map { it.albumId }.toSet().size }
+                } else emptyMap()
                 items(displayedArtists, key = { it.id }) { artist ->
                     ArtistRow(
                         artist = artist,
+                        albumCount = offlineAlbumCountByArtist[artist.id] ?: artist.albumCount,
                         onClick = { onArtistClick(artist.id) },
                         onLongClick = { if (!state.isOfflineMode) viewModel.downloadArtist(artist.id) },
                     )
@@ -106,7 +112,7 @@ fun ArtistsScreen(
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun ArtistRow(artist: ArtistEntity, onClick: () -> Unit, onLongClick: () -> Unit) {
+private fun ArtistRow(artist: ArtistEntity, albumCount: Int, onClick: () -> Unit, onLongClick: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -122,7 +128,7 @@ private fun ArtistRow(artist: ArtistEntity, onClick: () -> Unit, onLongClick: ()
     ) {
         Column {
             Text(text = artist.name, style = MaterialTheme.typography.bodyLarge)
-            Text(text = "${artist.albumCount} albums", style = MaterialTheme.typography.bodySmall)
+            Text(text = "$albumCount albums", style = MaterialTheme.typography.bodySmall)
         }
     }
 }

@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import androidx.work.workDataOf
 import com.navink.data.local.entity.AlbumEntity
@@ -27,9 +28,11 @@ data class BrowseUiState(
     val albums: List<AlbumEntity> = emptyList(),
     val songs: List<SongEntity> = emptyList(),
     val downloadedSongs: List<SongEntity> = emptyList(),
+    val downloadQueue: List<WorkInfo> = emptyList(),
     val isSyncing: Boolean = false,
     val isLoadingAlbums: Boolean = false,
     val syncError: String? = null,
+    val albumSyncError: String? = null,
     val downloadMessage: String? = null,
     val storageLocation: String = "external",
     val isOfflineMode: Boolean = false,
@@ -53,6 +56,17 @@ class BrowseViewModel @Inject constructor(
         }
         viewModelScope.launch {
             _state.value = _state.value.copy(isOfflineMode = settingsRepository.getOfflineMode())
+        }
+        viewModelScope.launch {
+            WorkManager.getInstance(context)
+                .getWorkInfosByTagFlow(DownloadWorker.TAG)
+                .collect { infos ->
+                    _state.value = _state.value.copy(
+                        downloadQueue = infos.filter {
+                            it.state == WorkInfo.State.ENQUEUED || it.state == WorkInfo.State.RUNNING
+                        }
+                    )
+                }
         }
     }
 
@@ -100,10 +114,11 @@ class BrowseViewModel @Inject constructor(
 
     fun syncArtistAlbums(artistId: String) {
         viewModelScope.launch {
-            _state.value = _state.value.copy(isLoadingAlbums = true)
+            _state.value = _state.value.copy(isLoadingAlbums = true, albumSyncError = null)
             try {
                 syncRepository.syncArtist(artistId)
-            } catch (_: Exception) {
+            } catch (e: Exception) {
+                _state.value = _state.value.copy(albumSyncError = e.message ?: e.javaClass.simpleName)
             } finally {
                 _state.value = _state.value.copy(isLoadingAlbums = false)
             }
@@ -130,7 +145,13 @@ class BrowseViewModel @Inject constructor(
             val wm = WorkManager.getInstance(context)
             songs.forEach { song ->
                 val data = workDataOf(DownloadWorker.KEY_SONG_ID to song.id)
-                wm.enqueue(OneTimeWorkRequestBuilder<DownloadWorker>().setInputData(data).build())
+                wm.enqueue(
+                    OneTimeWorkRequestBuilder<DownloadWorker>()
+                        .setInputData(data)
+                        .addTag(DownloadWorker.TAG)
+                        .addTag("${DownloadWorker.KEY_SONG_TITLE}:${song.title}")
+                        .build()
+                )
             }
             _state.value = _state.value.copy(downloadMessage = "Downloading ${songs.size} tracks…")
         }
@@ -147,7 +168,13 @@ class BrowseViewModel @Inject constructor(
             albums.forEach { album ->
                 musicRepository.songsForAlbumOnce(album.id).forEach { song ->
                     val data = workDataOf(DownloadWorker.KEY_SONG_ID to song.id)
-                    wm.enqueue(OneTimeWorkRequestBuilder<DownloadWorker>().setInputData(data).build())
+                    wm.enqueue(
+                        OneTimeWorkRequestBuilder<DownloadWorker>()
+                            .setInputData(data)
+                            .addTag(DownloadWorker.TAG)
+                            .addTag("${DownloadWorker.KEY_SONG_TITLE}:${song.title}")
+                            .build()
+                    )
                     count++
                 }
             }

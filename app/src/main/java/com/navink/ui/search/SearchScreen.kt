@@ -60,6 +60,12 @@ fun SearchScreen(
 
             if (state.isLoading) {
                 CircularProgressIndicator()
+            } else if (state.error != null) {
+                Text(
+                    text = "Error: ${state.error}",
+                    modifier = Modifier.padding(vertical = 8.dp),
+                    style = MaterialTheme.typography.bodySmall,
+                )
             } else {
                 LazyColumn {
                     if (state.artists.isNotEmpty()) {

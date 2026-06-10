@@ -68,6 +68,15 @@ fun AlbumsScreen(
             }
             else -> {
                 LazyColumn(Modifier.fillMaxSize().padding(padding)) {
+                    if (displayedAlbums.isEmpty() && state.albumSyncError != null) {
+                        item {
+                            Text(
+                                text = "Sync error: ${state.albumSyncError}",
+                                modifier = Modifier.padding(16.dp),
+                                style = MaterialTheme.typography.bodySmall,
+                            )
+                        }
+                    }
                     items(displayedAlbums, key = { it.id }) { album ->
                         AlbumRow(
                             album = album,

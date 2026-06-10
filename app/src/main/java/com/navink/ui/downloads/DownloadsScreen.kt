@@ -1,7 +1,5 @@
 package com.navink.ui.downloads
 
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -11,9 +9,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.work.WorkInfo
 import com.mudita.mmd.components.buttons.ButtonMMD
 import com.mudita.mmd.components.buttons.OutlinedButtonMMD
-import com.navink.data.local.entity.SongEntity
+import com.navink.download.DownloadWorker
 import com.navink.ui.browse.BrowseViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -49,20 +48,17 @@ fun DownloadsScreen(
                 )
                 HorizontalDivider()
             }
-            if (state.downloadedSongs.isEmpty()) {
+            if (state.downloadQueue.isEmpty()) {
                 item {
                     Text(
-                        text = "No downloaded tracks. Long-press an artist or album to download.",
+                        text = "No active downloads. Long-press an artist or album to queue downloads.",
                         modifier = Modifier.padding(16.dp),
                         style = MaterialTheme.typography.bodyMedium,
                     )
                 }
             } else {
-                items(state.downloadedSongs, key = { it.id }) { song ->
-                    DownloadedSongRow(
-                        song = song,
-                        onClick = { onSongClick(song.id, song.albumId) },
-                    )
+                items(state.downloadQueue, key = { it.id }) { workInfo ->
+                    QueueItemRow(workInfo = workInfo)
                     HorizontalDivider()
                 }
             }
@@ -107,22 +103,20 @@ private fun StorageToggle(location: String, onSelect: (String) -> Unit) {
 }
 
 @Composable
-private fun DownloadedSongRow(song: SongEntity, onClick: () -> Unit) {
+private fun QueueItemRow(workInfo: WorkInfo) {
+    val prefix = "${DownloadWorker.KEY_SONG_TITLE}:"
+    val title = workInfo.tags.firstOrNull { it.startsWith(prefix) }?.removePrefix(prefix) ?: "Track"
+    val stateLabel = if (workInfo.state == WorkInfo.State.RUNNING) "Downloading…" else "Queued"
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .height(72.dp)
-            .clickable(
-                indication = null,
-                interactionSource = remember { MutableInteractionSource() },
-                onClick = onClick,
-            )
             .padding(horizontal = 16.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(Modifier.weight(1f)) {
-            Text(text = song.title, style = MaterialTheme.typography.bodyLarge)
+            Text(text = title, style = MaterialTheme.typography.bodyLarge)
         }
-        Text(text = "↓", style = MaterialTheme.typography.bodySmall)
+        Text(text = stateLabel, style = MaterialTheme.typography.bodySmall)
     }
 }
