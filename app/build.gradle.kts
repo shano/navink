@@ -131,6 +131,8 @@ dependencies {
     testImplementation("androidx.test.ext:junit:1.1.5")
     testImplementation("androidx.room:room-testing:2.6.1")
     testImplementation(kotlin("test"))
+    testImplementation("androidx.work:work-testing:2.9.0")
+    testImplementation("com.squareup.okhttp3:mockwebserver:4.12.0")
 
     // Instrumented tests
     androidTestImplementation("androidx.test.ext:junit:1.1.5")
