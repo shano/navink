@@ -52,6 +52,7 @@ class DownloadRepository @Inject constructor(
                 enqueuedAt = now + i,
             )
         })
+        queueDao.requeueFailedByIds(pending.map { it.id })
         kickWorker()
         return pending.size
     }
@@ -60,6 +61,7 @@ class DownloadRepository @Inject constructor(
         val song = songDao.songById(songId) ?: return
         song.localPath?.let { File(it).delete() }
         songDao.clearDownloaded(songId)
+        queueDao.delete(songId)
     }
 
     suspend fun deleteAlbumDownloads(albumId: String) {

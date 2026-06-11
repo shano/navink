@@ -8,6 +8,7 @@ import androidx.work.Configuration
 import androidx.work.testing.WorkManagerTestInitHelper
 import com.navink.data.local.NavinkDatabase
 import com.navink.data.local.entity.AlbumEntity
+import com.navink.data.local.entity.DownloadQueueEntity
 import com.navink.data.local.entity.SongEntity
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
@@ -87,6 +88,34 @@ class DownloadRepositoryTest {
         repo.deleteAlbumDownloads("a1")
         assertTrue(!f1.exists())
         assertTrue(!db.songDao().songById("s1")!!.isDownloaded)
+    }
+
+    @Test
+    fun `enqueueAlbum requeues failed song for retry`() = runTest {
+        db.albumDao().upsertAll(listOf(AlbumEntity(id = "a1", artistId = "ar1", name = "A")))
+        seed("s1")
+        db.downloadQueueDao().insertAll(listOf(
+            DownloadQueueEntity(songId = "s1", title = "Ts1", status = DownloadQueueEntity.STATUS_QUEUED, enqueuedAt = 1L)
+        ))
+        db.downloadQueueDao().markFailed("s1", "network error")
+
+        repo.enqueueAlbum("a1")
+
+        val row = db.downloadQueueDao().queue().first().single { it.songId == "s1" }
+        assertEquals(DownloadQueueEntity.STATUS_QUEUED, row.status)
+        assertEquals(null, row.errorMessage)
+    }
+
+    @Test
+    fun `deleteSongDownload removes queue row`() = runTest {
+        seed("s1", downloaded = true)
+        db.downloadQueueDao().insertAll(listOf(
+            DownloadQueueEntity(songId = "s1", title = "Ts1", status = DownloadQueueEntity.STATUS_QUEUED, enqueuedAt = 1L)
+        ))
+
+        repo.deleteSongDownload("s1")
+
+        assertTrue(db.downloadQueueDao().queue().first().isEmpty())
     }
 
     @Test

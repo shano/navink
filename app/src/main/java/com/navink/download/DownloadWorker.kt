@@ -33,6 +33,7 @@ class DownloadWorker @AssistedInject constructor(
 ) : CoroutineWorker(appContext, workerParams) {
 
     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
+        queueDao.resetRunning()
         // Foreground keeps the drain alive past JobScheduler's ~10 min execution cap
         try { setForeground(foregroundInfo("Downloading…", 0)) } catch (_: Exception) {}
         while (true) {

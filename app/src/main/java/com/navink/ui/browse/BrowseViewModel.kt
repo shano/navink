@@ -107,7 +107,9 @@ class BrowseViewModel @Inject constructor(
         albumsJob?.cancel()
         _state.value = _state.value.copy(albums = emptyList())
         albumsJob = viewModelScope.launch {
-            val flow = if (_state.value.isOfflineMode) {
+            val offline = settingsRepository.getOfflineMode()
+            _state.value = _state.value.copy(isOfflineMode = offline)
+            val flow = if (offline) {
                 musicRepository.albumsWithDownloadsForArtist(artistId)
             } else {
                 musicRepository.albumsForArtist(artistId)
@@ -134,7 +136,9 @@ class BrowseViewModel @Inject constructor(
         songsJob?.cancel()
         _state.value = _state.value.copy(songs = emptyList())
         songsJob = viewModelScope.launch {
-            val flow = if (_state.value.isOfflineMode) {
+            val offline = settingsRepository.getOfflineMode()
+            _state.value = _state.value.copy(isOfflineMode = offline)
+            val flow = if (offline) {
                 musicRepository.downloadedSongsForAlbum(albumId)
             } else {
                 musicRepository.songsForAlbum(albumId)

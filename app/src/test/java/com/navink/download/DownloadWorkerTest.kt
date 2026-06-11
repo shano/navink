@@ -114,6 +114,19 @@ class DownloadWorkerTest {
     }
 
     @Test
+    fun `running row is reset and re-downloaded on worker restart`() = runTest {
+        seedSong("s1")
+        db.downloadQueueDao().markRunning("s1")
+        server.enqueue(MockResponse().setHeader("Content-Type", "audio/mpeg").setBody("AUDIO1"))
+
+        val result = buildWorker().doWork()
+
+        assertTrue(result is ListenableWorker.Result.Success)
+        assertTrue(db.songDao().songById("s1")!!.isDownloaded)
+        assertTrue(db.downloadQueueDao().queue().first().isEmpty())
+    }
+
+    @Test
     fun `failed item does not block later items`() = runTest {
         seedSong("s1"); seedSong("s2")
         repeat(DownloadWorker.MAX_ATTEMPTS) { server.enqueue(MockResponse().setResponseCode(500)) }

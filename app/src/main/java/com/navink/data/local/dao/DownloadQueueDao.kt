@@ -36,6 +36,9 @@ interface DownloadQueueDao {
     @Query("UPDATE DownloadQueueEntity SET status = 'QUEUED', errorMessage = NULL, progressPercent = 0 WHERE status = 'FAILED'")
     suspend fun requeueFailed()
 
+    @Query("UPDATE DownloadQueueEntity SET status = 'QUEUED', errorMessage = NULL, progressPercent = 0 WHERE songId IN (:songIds) AND status = 'FAILED'")
+    suspend fun requeueFailedByIds(songIds: List<String>)
+
     @Query("UPDATE DownloadQueueEntity SET status = 'QUEUED', progressPercent = 0 WHERE status = 'RUNNING'")
     suspend fun resetRunning()
 }
