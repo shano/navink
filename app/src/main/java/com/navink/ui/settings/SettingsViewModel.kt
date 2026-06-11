@@ -3,6 +3,7 @@ package com.navink.ui.settings
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.navink.data.remote.SubsonicService
+import com.navink.data.repository.DownloadRepository
 import com.navink.data.repository.SettingsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -18,12 +19,17 @@ data class SettingsUiState(
     val isLoading: Boolean = false,
     val error: String? = null,
     val connected: Boolean = false,
+    val storageLocation: String = "external",
+    val offlineMode: Boolean = false,
+    val storageUsedMb: Long = 0,
+    val verifyMessage: String? = null,
 )
 
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
     private val settingsRepository: SettingsRepository,
     private val service: SubsonicService,
+    private val downloadRepository: DownloadRepository,
 ) : ViewModel() {
     private val _state = MutableStateFlow(SettingsUiState())
     val state: StateFlow<SettingsUiState> = _state.asStateFlow()
@@ -35,7 +41,10 @@ class SettingsViewModel @Inject constructor(
                 serverUrl = creds.serverUrl,
                 username = creds.username,
                 password = creds.password,
+                storageLocation = settingsRepository.getStorageLocation(),
+                offlineMode = settingsRepository.getOfflineMode(),
             )
+            refreshStorageUsed()
         }
     }
 
@@ -65,5 +74,37 @@ class SettingsViewModel @Inject constructor(
                 _state.value = _state.value.copy(isLoading = false, error = "Cannot reach server: ${e.message}")
             }
         }
+    }
+
+    fun setStorageLocation(location: String) {
+        viewModelScope.launch {
+            settingsRepository.saveStorageLocation(location)
+            _state.value = _state.value.copy(storageLocation = location)
+        }
+    }
+
+    fun toggleOfflineMode() {
+        viewModelScope.launch {
+            val next = !_state.value.offlineMode
+            if (next) downloadRepository.verifyDownloads()
+            settingsRepository.saveOfflineMode(next)
+            _state.value = _state.value.copy(offlineMode = next)
+        }
+    }
+
+    fun verifyDownloads() {
+        viewModelScope.launch {
+            val repaired = downloadRepository.verifyDownloads()
+            _state.value = _state.value.copy(
+                verifyMessage = if (repaired == 0) "All downloads OK" else "$repaired stale entries repaired"
+            )
+            refreshStorageUsed()
+        }
+    }
+
+    private suspend fun refreshStorageUsed() {
+        _state.value = _state.value.copy(
+            storageUsedMb = downloadRepository.storageUsedBytes() / (1024 * 1024)
+        )
     }
 }
