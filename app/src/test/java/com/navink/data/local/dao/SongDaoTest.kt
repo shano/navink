@@ -149,4 +149,21 @@ class SongDaoTest {
         val artists = db.artistDao().artistsWithDownloads().first()
         assertEquals(listOf("ar1"), artists.map { it.id })
     }
+
+    @Test
+    fun `downloadedAlbumCountByArtist counts distinct albums per artist`() = runTest {
+        dao.upsertAll(listOf(
+            SongEntity(id = "s1", albumId = "a1", artistId = "ar1", title = "1", duration = 1),
+            SongEntity(id = "s2", albumId = "a1", artistId = "ar1", title = "2", duration = 1),
+            SongEntity(id = "s3", albumId = "a2", artistId = "ar1", title = "3", duration = 1),
+            SongEntity(id = "s4", albumId = "a3", artistId = "ar2", title = "4", duration = 1),
+        ))
+        dao.setDownloaded("s1", "/m/s1.mp3")
+        dao.setDownloaded("s2", "/m/s2.mp3")
+        dao.setDownloaded("s3", "/m/s3.mp3")
+        dao.setDownloaded("s4", "/m/s4.mp3")
+        val counts = dao.downloadedAlbumCountByArtist().first().associate { it.artistId to it.cnt }
+        assertEquals(2, counts["ar1"])
+        assertEquals(1, counts["ar2"])
+    }
 }
