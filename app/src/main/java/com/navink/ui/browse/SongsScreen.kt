@@ -9,6 +9,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.navink.data.local.entity.SongEntity
@@ -120,7 +121,11 @@ private fun SongRow(song: SongEntity, onClick: () -> Unit) {
         Text(text = song.duration.toMinSec(), style = MaterialTheme.typography.bodySmall)
         if (song.isDownloaded) {
             Spacer(Modifier.width(8.dp))
-            Text(text = "↓", style = MaterialTheme.typography.bodyLarge)
+            Text(
+                text = "↓",
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.Bold,
+            )
         }
     }
 }

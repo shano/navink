@@ -73,7 +73,7 @@ fun AlbumsScreen(
                             album = album,
                             downloadedCount = state.downloadedCountByAlbum[album.id] ?: 0,
                             onClick = { onAlbumClick(album.id) },
-                            onLongClick = { viewModel.downloadAlbum(album.id) },
+                            onLongClick = { if (!state.isOfflineMode) viewModel.downloadAlbum(album.id) },
                         )
                         HorizontalDivider()
                     }
