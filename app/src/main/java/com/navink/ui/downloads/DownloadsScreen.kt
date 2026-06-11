@@ -9,10 +9,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.work.WorkInfo
-import com.mudita.mmd.components.buttons.ButtonMMD
 import com.mudita.mmd.components.buttons.OutlinedButtonMMD
-import com.navink.download.DownloadWorker
+import com.navink.data.local.entity.DownloadQueueEntity
 import com.navink.ui.browse.BrowseViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -24,10 +22,7 @@ fun DownloadsScreen(
     viewModel: BrowseViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsState()
-
-    LaunchedEffect(Unit) {
-        viewModel.loadStorageLocation()
-    }
+    val hasFailed = state.downloadQueue.any { it.status == DownloadQueueEntity.STATUS_FAILED }
 
     Scaffold(
         topBar = {
@@ -41,25 +36,37 @@ fun DownloadsScreen(
         bottomBar = miniPlayer,
     ) { padding ->
         LazyColumn(Modifier.fillMaxSize().padding(padding)) {
-            item {
-                StorageToggle(
-                    location = state.storageLocation,
-                    onSelect = viewModel::setStorageLocation,
-                )
-                HorizontalDivider()
-            }
             if (state.downloadQueue.isEmpty()) {
                 item {
                     Text(
-                        text = "No active downloads. Long-press an artist or album to queue downloads.",
+                        text = "No active downloads. Long-press an artist or album to queue downloads, or use ↓ All on an album.",
                         modifier = Modifier.padding(16.dp),
                         style = MaterialTheme.typography.bodyMedium,
                     )
                 }
             } else {
-                items(state.downloadQueue, key = { it.id }) { workInfo ->
-                    QueueItemRow(workInfo = workInfo)
+                items(state.downloadQueue, key = { it.songId }) { item ->
+                    QueueItemRow(item = item)
                     HorizontalDivider()
+                }
+                if (hasFailed) {
+                    item {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        ) {
+                            OutlinedButtonMMD(
+                                onClick = { viewModel.retryFailedDownloads() },
+                                modifier = Modifier.weight(1f).height(56.dp),
+                            ) { Text("Retry failed") }
+                            OutlinedButtonMMD(
+                                onClick = { viewModel.clearFailedDownloads() },
+                                modifier = Modifier.weight(1f).height(56.dp),
+                            ) { Text("Clear failed") }
+                        }
+                    }
                 }
             }
         }
@@ -67,46 +74,7 @@ fun DownloadsScreen(
 }
 
 @Composable
-private fun StorageToggle(location: String, onSelect: (String) -> Unit) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 12.dp),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text(
-            text = "Save to:",
-            style = MaterialTheme.typography.bodyMedium,
-            modifier = Modifier.width(64.dp),
-        )
-        if (location == "external") {
-            ButtonMMD(
-                onClick = { onSelect("external") },
-                modifier = Modifier.weight(1f).height(56.dp),
-            ) { Text("SD Card") }
-            OutlinedButtonMMD(
-                onClick = { onSelect("internal") },
-                modifier = Modifier.weight(1f).height(56.dp),
-            ) { Text("Internal") }
-        } else {
-            OutlinedButtonMMD(
-                onClick = { onSelect("external") },
-                modifier = Modifier.weight(1f).height(56.dp),
-            ) { Text("SD Card") }
-            ButtonMMD(
-                onClick = { onSelect("internal") },
-                modifier = Modifier.weight(1f).height(56.dp),
-            ) { Text("Internal") }
-        }
-    }
-}
-
-@Composable
-private fun QueueItemRow(workInfo: WorkInfo) {
-    val prefix = "${DownloadWorker.KEY_SONG_TITLE}:"
-    val title = workInfo.tags.firstOrNull { it.startsWith(prefix) }?.removePrefix(prefix) ?: "Track"
-    val stateLabel = if (workInfo.state == WorkInfo.State.RUNNING) "Downloading…" else "Queued"
+private fun QueueItemRow(item: DownloadQueueEntity) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -115,8 +83,18 @@ private fun QueueItemRow(workInfo: WorkInfo) {
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(Modifier.weight(1f)) {
-            Text(text = title, style = MaterialTheme.typography.bodyLarge)
+            Text(text = item.title, style = MaterialTheme.typography.bodyLarge)
+            if (item.status == DownloadQueueEntity.STATUS_FAILED && item.errorMessage != null) {
+                Text(text = item.errorMessage, style = MaterialTheme.typography.bodySmall)
+            }
         }
-        Text(text = stateLabel, style = MaterialTheme.typography.bodySmall)
+        Text(
+            text = when (item.status) {
+                DownloadQueueEntity.STATUS_RUNNING -> "${item.progressPercent}%"
+                DownloadQueueEntity.STATUS_FAILED -> "Failed"
+                else -> "Queued"
+            },
+            style = MaterialTheme.typography.bodyMedium,
+        )
     }
 }
