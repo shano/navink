@@ -20,6 +20,7 @@ fun ArtistsScreen(
     onArtistClick: (String) -> Unit,
     onNavigateToSearch: () -> Unit,
     onNavigateToDownloads: () -> Unit,
+    onNavigateToSettings: () -> Unit,
     miniPlayer: @Composable () -> Unit,
     viewModel: BrowseViewModel = hiltViewModel(),
 ) {
@@ -30,13 +31,6 @@ fun ArtistsScreen(
         if (!state.isOfflineMode) viewModel.syncOnLaunch()
     }
 
-    val displayedArtists = if (state.isOfflineMode) {
-        val offlineArtistIds = state.downloadedSongs.map { it.artistId }.toSet()
-        state.artists.filter { it.id in offlineArtistIds }
-    } else {
-        state.artists
-    }
-
     Scaffold(
         topBar = {
             TopAppBar(
@@ -45,9 +39,10 @@ fun ArtistsScreen(
                     TextButton(onClick = { viewModel.toggleOfflineMode() }) {
                         Text(if (state.isOfflineMode) "Online" else "Offline")
                     }
+                    TextButton(onClick = onNavigateToDownloads) { Text("↓") }
+                    TextButton(onClick = onNavigateToSettings) { Text("⚙") }
                     if (!state.isOfflineMode) {
                         TextButton(onClick = onNavigateToSearch) { Text("🔍") }
-                        TextButton(onClick = onNavigateToDownloads) { Text("↓") }
                         if (!state.isSyncing) {
                             TextButton(onClick = { viewModel.syncOnLaunch() }) { Text("↻") }
                         } else {
@@ -91,15 +86,14 @@ fun ArtistsScreen(
                         )
                     }
                 }
-                val offlineAlbumCountByArtist = if (state.isOfflineMode) {
-                    state.downloadedSongs
-                        .groupBy { it.artistId }
-                        .mapValues { (_, songs) -> songs.map { it.albumId }.toSet().size }
-                } else emptyMap()
-                items(displayedArtists, key = { it.id }) { artist ->
+                items(state.artists, key = { it.id }) { artist ->
                     ArtistRow(
                         artist = artist,
-                        albumCount = offlineAlbumCountByArtist[artist.id] ?: artist.albumCount,
+                        albumCount = if (state.isOfflineMode) {
+                            state.downloadedAlbumCountByArtist[artist.id] ?: 0
+                        } else {
+                            artist.albumCount
+                        },
                         onClick = { onArtistClick(artist.id) },
                         onLongClick = { if (!state.isOfflineMode) viewModel.downloadArtist(artist.id) },
                     )

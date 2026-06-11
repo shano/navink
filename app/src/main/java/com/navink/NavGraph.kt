@@ -50,6 +50,7 @@ fun NavGraph(
                 onArtistClick = { artistId -> navController.navigate("browse/albums/$artistId") },
                 onNavigateToSearch = { navController.navigate("search") },
                 onNavigateToDownloads = { navController.navigate("downloads") },
+                onNavigateToSettings = { navController.navigate("settings/edit") },
                 miniPlayer = miniPlayer,
                 viewModel = browseViewModel,
             )
@@ -128,7 +129,10 @@ fun NavGraph(
         }
 
         composable("settings/edit") {
-            SettingsScreen(onConnected = { navController.navigateUp() })
+            SettingsScreen(
+                onConnected = { navController.navigateUp() },
+                onBack = { navController.navigateUp() },
+            )
         }
     }
 }

@@ -31,15 +31,6 @@ fun AlbumsScreen(
         if (!state.isOfflineMode) viewModel.syncArtistAlbums(artistId)
     }
 
-    val displayedAlbums = if (state.isOfflineMode) {
-        val offlineAlbumIds = state.downloadedSongs
-            .filter { it.artistId == artistId }
-            .map { it.albumId }.toSet()
-        state.albums.filter { it.id in offlineAlbumIds }
-    } else {
-        state.albums
-    }
-
     LaunchedEffect(state.downloadMessage) {
         if (state.downloadMessage != null) {
             delay(3000)
@@ -68,7 +59,7 @@ fun AlbumsScreen(
             }
             else -> {
                 LazyColumn(Modifier.fillMaxSize().padding(padding)) {
-                    if (displayedAlbums.isEmpty() && state.albumSyncError != null) {
+                    if (state.albums.isEmpty() && state.albumSyncError != null) {
                         item {
                             Text(
                                 text = "Sync error: ${state.albumSyncError}",
@@ -77,9 +68,10 @@ fun AlbumsScreen(
                             )
                         }
                     }
-                    items(displayedAlbums, key = { it.id }) { album ->
+                    items(state.albums, key = { it.id }) { album ->
                         AlbumRow(
                             album = album,
+                            downloadedCount = state.downloadedCountByAlbum[album.id] ?: 0,
                             onClick = { onAlbumClick(album.id) },
                             onLongClick = { viewModel.downloadAlbum(album.id) },
                         )
@@ -93,7 +85,7 @@ fun AlbumsScreen(
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun AlbumRow(album: AlbumEntity, onClick: () -> Unit, onLongClick: () -> Unit) {
+private fun AlbumRow(album: AlbumEntity, downloadedCount: Int, onClick: () -> Unit, onLongClick: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -107,9 +99,15 @@ private fun AlbumRow(album: AlbumEntity, onClick: () -> Unit, onLongClick: () ->
             .padding(horizontal = 16.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Column {
+        Column(Modifier.weight(1f)) {
             Text(text = album.name, style = MaterialTheme.typography.bodyLarge)
             album.year?.let { Text(text = it.toString(), style = MaterialTheme.typography.bodySmall) }
+        }
+        if (downloadedCount > 0) {
+            Text(
+                text = "$downloadedCount/${album.songCount} ↓",
+                style = MaterialTheme.typography.bodyMedium,
+            )
         }
     }
 }

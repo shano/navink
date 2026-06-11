@@ -23,30 +23,59 @@ fun SongsScreen(
     viewModel: BrowseViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsState()
+    var confirmRemove by remember { mutableStateOf(false) }
 
     LaunchedEffect(albumId) {
-        if (!state.isOfflineMode) viewModel.observeSongs(albumId)
+        viewModel.observeSongs(albumId)
     }
 
-    val displayedSongs = if (state.isOfflineMode) {
-        state.downloadedSongs.filter { it.albumId == albumId }
-    } else {
-        state.songs
+    LaunchedEffect(state.downloadMessage) {
+        if (state.downloadMessage != null) {
+            kotlinx.coroutines.delay(3000)
+            viewModel.clearDownloadMessage()
+        }
+    }
+
+    val downloadedCount = state.downloadedCountByAlbum[albumId] ?: 0
+
+    if (confirmRemove) {
+        AlertDialog(
+            onDismissRequest = { confirmRemove = false },
+            title = { Text("Remove downloads?") },
+            text = { Text("Deletes $downloadedCount downloaded tracks of this album from this device.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    viewModel.deleteAlbumDownloads(albumId)
+                    confirmRemove = false
+                }) { Text("Remove") }
+            },
+            dismissButton = {
+                TextButton(onClick = { confirmRemove = false }) { Text("Cancel") }
+            },
+        )
     }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Songs") },
+                title = { Text(state.downloadMessage ?: "Songs") },
                 navigationIcon = {
                     TextButton(onClick = onBack) { Text("←") }
+                },
+                actions = {
+                    if (!state.isOfflineMode && downloadedCount < state.songs.size) {
+                        TextButton(onClick = { viewModel.downloadAlbum(albumId) }) { Text("↓ All") }
+                    }
+                    if (downloadedCount > 0) {
+                        TextButton(onClick = { confirmRemove = true }) { Text("Remove ↓") }
+                    }
                 },
             )
         },
         bottomBar = miniPlayer,
     ) { padding ->
         LazyColumn(Modifier.fillMaxSize().padding(padding)) {
-            items(displayedSongs, key = { it.id }) { song ->
+            items(state.songs, key = { it.id }) { song ->
                 SongRow(
                     song = song,
                     onClick = { onSongClick(song.id, albumId) },
@@ -90,8 +119,8 @@ private fun SongRow(song: SongEntity, onClick: () -> Unit) {
         }
         Text(text = song.duration.toMinSec(), style = MaterialTheme.typography.bodySmall)
         if (song.isDownloaded) {
-            Spacer(Modifier.width(4.dp))
-            Text(text = "↓", style = MaterialTheme.typography.bodySmall)
+            Spacer(Modifier.width(8.dp))
+            Text(text = "↓", style = MaterialTheme.typography.bodyLarge)
         }
     }
 }
