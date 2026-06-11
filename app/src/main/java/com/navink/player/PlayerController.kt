@@ -54,9 +54,8 @@ class PlayerController @Inject constructor(
     }
 
     fun playAlbum(songs: List<SongEntity>, startSongId: String) {
-        val queue = buildQueue(songs, startSongId)
         val creds = runBlocking { settingsRepository.getCredentials() }
-        val items = queue.map { song ->
+        val items = songs.map { song ->
             val uri = song.localPath?.let { "file://$it" }
                 ?: "${creds.serverUrl}/rest/stream.view?id=${song.id}&u=${creds.username}&p=${creds.password}&v=1.16.1&c=navink"
             MediaItem.Builder()
@@ -69,15 +68,16 @@ class PlayerController @Inject constructor(
                 )
                 .build()
         }
+        val start = startIndex(songs, startSongId)
         controller?.apply {
-            setMediaItems(items)
+            setMediaItems(items, start, 0L)
             prepare()
             play()
         }
-        val first = queue.firstOrNull()
+        val current = songs.getOrNull(start)
         _state.value = _state.value.copy(
-            currentSongId = first?.id,
-            currentCoverArtId = first?.coverArtId,
+            currentSongId = current?.id,
+            currentCoverArtId = current?.coverArtId,
             hasQueue = items.isNotEmpty(),
         )
     }
@@ -92,9 +92,7 @@ class PlayerController @Inject constructor(
     fun disconnect() { controller?.release() }
 
     companion object {
-        fun buildQueue(songs: List<SongEntity>, startSongId: String): List<SongEntity> {
-            val startIndex = songs.indexOfFirst { it.id == startSongId }
-            return if (startIndex < 0) songs else songs.subList(startIndex, songs.size)
-        }
+        fun startIndex(songs: List<SongEntity>, startSongId: String): Int =
+            songs.indexOfFirst { it.id == startSongId }.coerceAtLeast(0)
     }
 }
