@@ -7,6 +7,7 @@ import com.navink.data.local.entity.AlbumEntity
 import com.navink.data.local.entity.ArtistEntity
 import com.navink.data.local.entity.SongEntity
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -26,4 +27,16 @@ class MusicRepository @Inject constructor(
     suspend fun albumsForArtistOnce(artistId: String): List<AlbumEntity> = albumDao.albumsForArtistOnce(artistId)
     suspend fun songById(id: String): SongEntity? = songDao.songById(id)
     fun downloadedSongs(): Flow<List<SongEntity>> = songDao.downloadedSongs()
+
+    fun artistsWithDownloads(): Flow<List<ArtistEntity>> = artistDao.artistsWithDownloads()
+    fun albumsWithDownloadsForArtist(artistId: String): Flow<List<AlbumEntity>> =
+        albumDao.albumsWithDownloadsForArtist(artistId)
+    fun downloadedSongsForAlbum(albumId: String): Flow<List<SongEntity>> =
+        songDao.downloadedSongsForAlbum(albumId)
+    suspend fun downloadedSongsForAlbumOnce(albumId: String): List<SongEntity> =
+        songDao.downloadedSongsForAlbumOnce(albumId)
+    fun downloadedCountByAlbum(): Flow<Map<String, Int>> =
+        songDao.downloadedCountByAlbum().map { list -> list.associate { it.albumId to it.cnt } }
+    fun downloadedAlbumCountByArtist(): Flow<Map<String, Int>> =
+        songDao.downloadedAlbumCountByArtist().map { list -> list.associate { it.artistId to it.cnt } }
 }

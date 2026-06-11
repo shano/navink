@@ -53,7 +53,12 @@ class PlayerViewModel @Inject constructor(
 
     fun playSongFromAlbum(songId: String, albumId: String) {
         viewModelScope.launch {
-            val songs = musicRepository.songsForAlbumOnce(albumId)
+            val offline = settingsRepository.getOfflineMode()
+            val songs = if (offline) {
+                musicRepository.downloadedSongsForAlbumOnce(albumId)
+            } else {
+                musicRepository.songsForAlbumOnce(albumId)
+            }
             playerController.playAlbum(songs, songId)
         }
     }
@@ -68,7 +73,12 @@ class PlayerViewModel @Inject constructor(
     fun downloadCurrentSong() {
         val songId = state.value.currentSongId ?: return
         _isDownloadingCurrentSong.value = true
-        downloadRepository.downloadSong(songId)
+        viewModelScope.launch { downloadRepository.enqueueSong(songId) }
+    }
+
+    fun deleteCurrentSongDownload() {
+        val songId = state.value.currentSongId ?: return
+        viewModelScope.launch { downloadRepository.deleteSongDownload(songId) }
     }
 
     fun playPause() = playerController.playPause()

@@ -73,12 +73,21 @@ fun NowPlayingScreen(
             ) { Text("⏭") }
         }
         Spacer(Modifier.height(12.dp))
-        if (state.currentSongId != null && !isDownloaded) {
-            OutlinedButtonMMD(
-                onClick = { if (!isDownloading) viewModel.downloadCurrentSong() },
-                modifier = Modifier.fillMaxWidth().height(56.dp),
-            ) {
-                Text(if (isDownloading) "Downloading…" else "Download")
+        if (state.currentSongId != null) {
+            if (!isDownloaded) {
+                OutlinedButtonMMD(
+                    onClick = { if (!isDownloading) viewModel.downloadCurrentSong() },
+                    modifier = Modifier.fillMaxWidth().height(56.dp),
+                ) {
+                    Text(if (isDownloading) "Queued…" else "Download")
+                }
+            } else {
+                OutlinedButtonMMD(
+                    onClick = { viewModel.deleteCurrentSongDownload() },
+                    modifier = Modifier.fillMaxWidth().height(56.dp),
+                ) {
+                    Text("Remove download")
+                }
             }
         }
         Spacer(Modifier.height(16.dp))
