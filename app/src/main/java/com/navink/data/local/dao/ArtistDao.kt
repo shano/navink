@@ -22,4 +22,11 @@ interface ArtistDao {
 
     @Query("SELECT * FROM ArtistEntity WHERE isStarred = 1 ORDER BY name ASC")
     fun starredArtists(): Flow<List<ArtistEntity>>
+
+    @Query(
+        """SELECT * FROM ArtistEntity
+           WHERE id IN (SELECT DISTINCT artistId FROM SongEntity WHERE isDownloaded = 1)
+           ORDER BY name ASC"""
+    )
+    fun artistsWithDownloads(): Flow<List<ArtistEntity>>
 }

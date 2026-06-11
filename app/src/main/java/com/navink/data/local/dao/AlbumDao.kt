@@ -25,4 +25,11 @@ interface AlbumDao {
 
     @Query("SELECT * FROM AlbumEntity WHERE artistId = :artistId ORDER BY year ASC, name ASC")
     suspend fun albumsForArtistOnce(artistId: String): List<AlbumEntity>
+
+    @Query(
+        """SELECT * FROM AlbumEntity WHERE artistId = :artistId
+           AND id IN (SELECT DISTINCT albumId FROM SongEntity WHERE isDownloaded = 1)
+           ORDER BY year ASC, name ASC"""
+    )
+    fun albumsWithDownloadsForArtist(artistId: String): Flow<List<AlbumEntity>>
 }

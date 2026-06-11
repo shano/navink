@@ -128,4 +128,25 @@ class SongDaoTest {
         assertEquals(2, counts["a1"])
         assertEquals(1, counts["a2"])
     }
+
+    @Test
+    fun `albumsWithDownloadsForArtist and artistsWithDownloads return only downloaded`() = runTest {
+        db.artistDao().upsertAll(listOf(
+            com.navink.data.local.entity.ArtistEntity(id = "ar1", name = "A"),
+            com.navink.data.local.entity.ArtistEntity(id = "ar2", name = "B"),
+        ))
+        db.albumDao().upsertAll(listOf(
+            com.navink.data.local.entity.AlbumEntity(id = "a1", artistId = "ar1", name = "Down"),
+            com.navink.data.local.entity.AlbumEntity(id = "a2", artistId = "ar1", name = "NotDown"),
+        ))
+        dao.upsertAll(listOf(
+            SongEntity(id = "s1", albumId = "a1", artistId = "ar1", title = "T", duration = 1),
+            SongEntity(id = "s2", albumId = "a2", artistId = "ar1", title = "U", duration = 1),
+        ))
+        dao.setDownloaded("s1", "/m/s1.mp3")
+        val albums = db.albumDao().albumsWithDownloadsForArtist("ar1").first()
+        assertEquals(listOf("a1"), albums.map { it.id })
+        val artists = db.artistDao().artistsWithDownloads().first()
+        assertEquals(listOf("ar1"), artists.map { it.id })
+    }
 }
