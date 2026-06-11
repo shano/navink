@@ -67,4 +67,65 @@ class SongDaoTest {
         assertEquals(1, starred.size)
         assertEquals("s1", starred[0].id)
     }
+
+    @Test
+    fun `upsertPreservingDownloads keeps download flags but updates metadata`() = runTest {
+        dao.upsertAll(listOf(
+            SongEntity(id = "s1", albumId = "a1", artistId = "ar1", title = "Old", duration = 100)
+        ))
+        dao.setDownloaded("s1", "/m/s1.mp3")
+        dao.upsertPreservingDownloads(listOf(
+            SongEntity(id = "s1", albumId = "a1", artistId = "ar1", title = "New", trackNumber = 3, duration = 120, isStarred = true),
+            SongEntity(id = "s2", albumId = "a1", artistId = "ar1", title = "Fresh", duration = 90),
+        ))
+        val s1 = dao.songById("s1")!!
+        assertEquals("New", s1.title)
+        assertEquals(3, s1.trackNumber)
+        assertTrue(s1.isStarred)
+        assertTrue(s1.isDownloaded)
+        assertEquals("/m/s1.mp3", s1.localPath)
+        val s2 = dao.songById("s2")!!
+        assertEquals("Fresh", s2.title)
+        assertTrue(!s2.isDownloaded)
+    }
+
+    @Test
+    fun `downloadedSongsForAlbum is ordered by track number`() = runTest {
+        dao.upsertAll(listOf(
+            SongEntity(id = "s1", albumId = "a1", artistId = "ar1", title = "Zeta", trackNumber = 1, duration = 1),
+            SongEntity(id = "s2", albumId = "a1", artistId = "ar1", title = "Alpha", trackNumber = 2, duration = 1),
+            SongEntity(id = "s3", albumId = "a1", artistId = "ar1", title = "Beta", trackNumber = 3, duration = 1),
+        ))
+        dao.setDownloaded("s1", "/m/s1.mp3")
+        dao.setDownloaded("s3", "/m/s3.mp3")
+        val result = dao.downloadedSongsForAlbum("a1").first()
+        assertEquals(listOf("s1", "s3"), result.map { it.id })
+    }
+
+    @Test
+    fun `clearDownloaded resets flag and path`() = runTest {
+        dao.upsertAll(listOf(
+            SongEntity(id = "s1", albumId = "a1", artistId = "ar1", title = "T", duration = 1)
+        ))
+        dao.setDownloaded("s1", "/m/s1.mp3")
+        dao.clearDownloaded("s1")
+        val s = dao.songById("s1")!!
+        assertTrue(!s.isDownloaded)
+        assertEquals(null, s.localPath)
+    }
+
+    @Test
+    fun `downloadedCountByAlbum groups counts`() = runTest {
+        dao.upsertAll(listOf(
+            SongEntity(id = "s1", albumId = "a1", artistId = "ar1", title = "1", duration = 1),
+            SongEntity(id = "s2", albumId = "a1", artistId = "ar1", title = "2", duration = 1),
+            SongEntity(id = "s3", albumId = "a2", artistId = "ar1", title = "3", duration = 1),
+        ))
+        dao.setDownloaded("s1", "/m/s1.mp3")
+        dao.setDownloaded("s2", "/m/s2.mp3")
+        dao.setDownloaded("s3", "/m/s3.mp3")
+        val counts = dao.downloadedCountByAlbum().first().associate { it.albumId to it.cnt }
+        assertEquals(2, counts["a1"])
+        assertEquals(1, counts["a2"])
+    }
 }
