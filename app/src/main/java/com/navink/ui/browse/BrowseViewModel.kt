@@ -1,21 +1,16 @@
 package com.navink.ui.browse
 
-import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import androidx.work.OneTimeWorkRequestBuilder
-import androidx.work.WorkInfo
-import androidx.work.WorkManager
-import androidx.work.workDataOf
 import com.navink.data.local.entity.AlbumEntity
 import com.navink.data.local.entity.ArtistEntity
+import com.navink.data.local.entity.DownloadQueueEntity
 import com.navink.data.local.entity.SongEntity
+import com.navink.data.repository.DownloadRepository
 import com.navink.data.repository.MusicRepository
 import com.navink.data.repository.SettingsRepository
 import com.navink.data.repository.SyncRepository
-import com.navink.download.DownloadWorker
 import dagger.hilt.android.lifecycle.HiltViewModel
-import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -27,54 +22,55 @@ data class BrowseUiState(
     val artists: List<ArtistEntity> = emptyList(),
     val albums: List<AlbumEntity> = emptyList(),
     val songs: List<SongEntity> = emptyList(),
-    val downloadedSongs: List<SongEntity> = emptyList(),
-    val downloadQueue: List<WorkInfo> = emptyList(),
+    val downloadQueue: List<DownloadQueueEntity> = emptyList(),
+    val downloadedCountByAlbum: Map<String, Int> = emptyMap(),
+    val downloadedAlbumCountByArtist: Map<String, Int> = emptyMap(),
     val isSyncing: Boolean = false,
     val isLoadingAlbums: Boolean = false,
     val syncError: String? = null,
     val albumSyncError: String? = null,
     val downloadMessage: String? = null,
-    val storageLocation: String = "external",
     val isOfflineMode: Boolean = false,
 )
 
 @HiltViewModel
 class BrowseViewModel @Inject constructor(
-    @ApplicationContext private val context: Context,
     private val musicRepository: MusicRepository,
     private val syncRepository: SyncRepository,
     private val settingsRepository: SettingsRepository,
+    private val downloadRepository: DownloadRepository,
 ) : ViewModel() {
     private val _state = MutableStateFlow(BrowseUiState())
     val state: StateFlow<BrowseUiState> = _state.asStateFlow()
 
     init {
         viewModelScope.launch {
-            musicRepository.downloadedSongs().collect { list ->
-                _state.value = _state.value.copy(downloadedSongs = list)
-            }
-        }
-        viewModelScope.launch {
             _state.value = _state.value.copy(isOfflineMode = settingsRepository.getOfflineMode())
         }
         viewModelScope.launch {
-            WorkManager.getInstance(context)
-                .getWorkInfosByTagFlow(DownloadWorker.TAG)
-                .collect { infos ->
-                    _state.value = _state.value.copy(
-                        downloadQueue = infos.filter {
-                            it.state == WorkInfo.State.ENQUEUED || it.state == WorkInfo.State.RUNNING
-                        }
-                    )
-                }
+            downloadRepository.queue().collect { q ->
+                _state.value = _state.value.copy(downloadQueue = q)
+            }
+        }
+        viewModelScope.launch {
+            musicRepository.downloadedCountByAlbum().collect { counts ->
+                _state.value = _state.value.copy(downloadedCountByAlbum = counts)
+            }
+        }
+        viewModelScope.launch {
+            musicRepository.downloadedAlbumCountByArtist().collect { counts ->
+                _state.value = _state.value.copy(downloadedAlbumCountByArtist = counts)
+            }
         }
     }
 
     fun toggleOfflineMode() {
         viewModelScope.launch {
             val next = !_state.value.isOfflineMode
+            if (next) downloadRepository.verifyDownloads()
             settingsRepository.saveOfflineMode(next)
             _state.value = _state.value.copy(isOfflineMode = next)
+            observeArtists()
         }
     }
 
@@ -95,9 +91,14 @@ class BrowseViewModel @Inject constructor(
     fun observeArtists() {
         artistsJob?.cancel()
         artistsJob = viewModelScope.launch {
-            musicRepository.allArtists().collect { list ->
-                _state.value = _state.value.copy(artists = list)
+            val offline = settingsRepository.getOfflineMode()
+            _state.value = _state.value.copy(isOfflineMode = offline)
+            val flow = if (offline) {
+                musicRepository.artistsWithDownloads()
+            } else {
+                musicRepository.allArtists()
             }
+            flow.collect { list -> _state.value = _state.value.copy(artists = list) }
         }
     }
 
@@ -106,9 +107,12 @@ class BrowseViewModel @Inject constructor(
         albumsJob?.cancel()
         _state.value = _state.value.copy(albums = emptyList())
         albumsJob = viewModelScope.launch {
-            musicRepository.albumsForArtist(artistId).collect { list ->
-                _state.value = _state.value.copy(albums = list)
+            val flow = if (_state.value.isOfflineMode) {
+                musicRepository.albumsWithDownloadsForArtist(artistId)
+            } else {
+                musicRepository.albumsForArtist(artistId)
             }
+            flow.collect { list -> _state.value = _state.value.copy(albums = list) }
         }
     }
 
@@ -130,9 +134,12 @@ class BrowseViewModel @Inject constructor(
         songsJob?.cancel()
         _state.value = _state.value.copy(songs = emptyList())
         songsJob = viewModelScope.launch {
-            musicRepository.songsForAlbum(albumId).collect { list ->
-                _state.value = _state.value.copy(songs = list)
+            val flow = if (_state.value.isOfflineMode) {
+                musicRepository.downloadedSongsForAlbum(albumId)
+            } else {
+                musicRepository.songsForAlbum(albumId)
             }
+            flow.collect { list -> _state.value = _state.value.copy(songs = list) }
         }
     }
 
@@ -141,19 +148,10 @@ class BrowseViewModel @Inject constructor(
             try {
                 syncRepository.syncAlbumSongs(albumId)
             } catch (_: Exception) {}
-            val songs = musicRepository.songsForAlbumOnce(albumId)
-            val wm = WorkManager.getInstance(context)
-            songs.forEach { song ->
-                val data = workDataOf(DownloadWorker.KEY_SONG_ID to song.id)
-                wm.enqueue(
-                    OneTimeWorkRequestBuilder<DownloadWorker>()
-                        .setInputData(data)
-                        .addTag(DownloadWorker.TAG)
-                        .addTag("${DownloadWorker.KEY_SONG_TITLE}:${song.title}")
-                        .build()
-                )
-            }
-            _state.value = _state.value.copy(downloadMessage = "Downloading ${songs.size} tracks…")
+            val queued = downloadRepository.enqueueAlbum(albumId)
+            _state.value = _state.value.copy(
+                downloadMessage = if (queued == 0) "Already downloaded" else "Queued $queued tracks"
+            )
         }
     }
 
@@ -162,40 +160,29 @@ class BrowseViewModel @Inject constructor(
             try {
                 syncRepository.syncArtist(artistId)
             } catch (_: Exception) {}
-            val albums = musicRepository.albumsForArtistOnce(artistId)
-            val wm = WorkManager.getInstance(context)
-            var count = 0
-            albums.forEach { album ->
-                musicRepository.songsForAlbumOnce(album.id).forEach { song ->
-                    val data = workDataOf(DownloadWorker.KEY_SONG_ID to song.id)
-                    wm.enqueue(
-                        OneTimeWorkRequestBuilder<DownloadWorker>()
-                            .setInputData(data)
-                            .addTag(DownloadWorker.TAG)
-                            .addTag("${DownloadWorker.KEY_SONG_TITLE}:${song.title}")
-                            .build()
-                    )
-                    count++
-                }
-            }
-            _state.value = _state.value.copy(downloadMessage = "Downloading $count tracks…")
+            val queued = downloadRepository.enqueueArtist(artistId)
+            _state.value = _state.value.copy(
+                downloadMessage = if (queued == 0) "Already downloaded" else "Queued $queued tracks"
+            )
         }
+    }
+
+    fun deleteAlbumDownloads(albumId: String) {
+        viewModelScope.launch {
+            downloadRepository.deleteAlbumDownloads(albumId)
+            _state.value = _state.value.copy(downloadMessage = "Downloads removed")
+        }
+    }
+
+    fun retryFailedDownloads() {
+        viewModelScope.launch { downloadRepository.retryFailed() }
+    }
+
+    fun clearFailedDownloads() {
+        viewModelScope.launch { downloadRepository.clearFailed() }
     }
 
     fun clearDownloadMessage() {
         _state.value = _state.value.copy(downloadMessage = null)
-    }
-
-    fun loadStorageLocation() {
-        viewModelScope.launch {
-            _state.value = _state.value.copy(storageLocation = settingsRepository.getStorageLocation())
-        }
-    }
-
-    fun setStorageLocation(location: String) {
-        viewModelScope.launch {
-            settingsRepository.saveStorageLocation(location)
-            _state.value = _state.value.copy(storageLocation = location)
-        }
     }
 }
