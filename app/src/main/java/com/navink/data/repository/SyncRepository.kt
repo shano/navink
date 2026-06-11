@@ -23,7 +23,7 @@ class SyncRepository @Inject constructor(
     suspend fun syncAlbumSongs(albumId: String) {
         val album = albumDao.albumById(albumId) ?: return
         val albumDetail = service.getAlbum(albumId).response.album ?: return
-        songDao.upsertAll(albumDetail.song.map {
+        songDao.upsertPreservingDownloads(albumDetail.song.map {
             it.toEntity(albumId = albumId, artistId = album.artistId)
         })
     }
@@ -33,7 +33,7 @@ class SyncRepository @Inject constructor(
         albumDao.upsertAll(artistDetail.album.map { it.toEntity(artistId = artistId) })
         for (albumDto in artistDetail.album) {
             val albumDetail = service.getAlbum(albumDto.id).response.album ?: continue
-            songDao.upsertAll(albumDetail.song.map { it.toEntity(albumId = albumDto.id, artistId = artistId) })
+            songDao.upsertPreservingDownloads(albumDetail.song.map { it.toEntity(albumId = albumDto.id, artistId = artistId) })
         }
     }
 
