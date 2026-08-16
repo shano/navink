@@ -54,7 +54,7 @@ GPL-3.0 — see [LICENSE](LICENSE).
 
 ## Other apps for the Kompact
 
-| [Navink](https://github.com/shano/navink) | [Remink](https://github.com/shano/remink) | Zendo |
+| [Navink](https://github.com/shano/navink) | [Remink](https://github.com/shano/remink) | [Zendo](https://github.com/shano/zendo) |
 |:---:|:---:|:---:|
-| <a href="https://github.com/shano/navink"><img src="assets/icon.svg" width="64" height="64"></a> | <a href="https://github.com/shano/remink"><img src="https://raw.githubusercontent.com/shano/remink/main/assets/icon.svg" width="64" height="64"></a> | 🚧 |
-| Navidrome / Subsonic player | Reminders with alarms | Meditation timer — in progress |
+| <a href="https://github.com/shano/navink"><img src="assets/icon.svg" width="64" height="64"></a> | <a href="https://github.com/shano/remink"><img src="https://raw.githubusercontent.com/shano/remink/main/assets/icon.svg" width="64" height="64"></a> | <a href="https://github.com/shano/zendo"><img src="https://raw.githubusercontent.com/shano/zendo/main/assets/icon.svg" width="64" height="64"></a> |
+| Navidrome / Subsonic player | Reminders with alarms | Meditation timer |
