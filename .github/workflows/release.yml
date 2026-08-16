@@ -38,15 +38,20 @@ jobs:
         working-directory: navink
         run: ./gradlew assembleDebug --no-daemon
 
+      - name: Rename APK to release version
+        if: startsWith(github.ref, 'refs/tags/v')
+        working-directory: navink/app/build/outputs/apk/debug
+        run: mv app-debug.apk "navink-${GITHUB_REF_NAME#v}.apk"
+
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: navink-debug-apk
-          path: navink/app/build/outputs/apk/debug/app-debug.apk
+          name: navink-apk
+          path: navink/app/build/outputs/apk/debug/*.apk
 
       - name: Create release
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
-          files: navink/app/build/outputs/apk/debug/app-debug.apk
+          files: navink/app/build/outputs/apk/debug/navink-*.apk
           generate_release_notes: true
