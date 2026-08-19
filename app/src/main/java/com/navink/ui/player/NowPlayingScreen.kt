@@ -11,6 +11,15 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.mudita.mmd.components.buttons.ButtonMMD
 import com.mudita.mmd.components.buttons.OutlinedButtonMMD
+import com.mudita.mmd.components.slider.SliderMMD
+import java.util.Locale
+
+private fun formatMs(ms: Long): String {
+    val totalSeconds = ms / 1000
+    val minutes = totalSeconds / 60
+    val seconds = totalSeconds % 60
+    return String.format(Locale.US, "%d:%02d", minutes, seconds)
+}
 
 @Composable
 fun NowPlayingScreen(
@@ -20,6 +29,11 @@ fun NowPlayingScreen(
     val state by viewModel.state.collectAsState()
     val isDownloading by viewModel.isDownloadingCurrentSong.collectAsState()
     val isDownloaded by viewModel.isCurrentSongDownloaded.collectAsState()
+    val positionMs by viewModel.positionMs.collectAsState()
+    val durationMs by viewModel.durationMs.collectAsState()
+
+    var dragFraction by remember { mutableStateOf<Float?>(null) }
+    val playedFraction = if (durationMs > 0) positionMs.toFloat() / durationMs else 0f
 
     Column(
         modifier = Modifier
@@ -52,6 +66,24 @@ fun NowPlayingScreen(
         )
 
         Spacer(Modifier.weight(1f))
+
+        SliderMMD(
+            value = dragFraction ?: playedFraction,
+            onValueChange = { dragFraction = it },
+            onValueChangeFinished = {
+                dragFraction?.let { viewModel.seekTo(it) }
+                dragFraction = null
+            },
+            modifier = Modifier.fillMaxWidth(),
+        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+            Text(text = formatMs(positionMs), style = MaterialTheme.typography.bodySmall)
+            Text(text = formatMs(durationMs), style = MaterialTheme.typography.bodySmall)
+        }
+        Spacer(Modifier.height(12.dp))
 
         Row(
             modifier = Modifier.fillMaxWidth(),

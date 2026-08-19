@@ -2,6 +2,7 @@ package com.navink.player
 
 import android.content.ComponentName
 import android.content.Context
+import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
 import androidx.media3.common.Player
@@ -88,6 +89,13 @@ class PlayerController @Inject constructor(
 
     fun next() { controller?.seekToNextMediaItem() }
     fun previous() { controller?.seekToPreviousMediaItem() }
+
+    fun currentPositionMs(): Long = controller?.currentPosition ?: 0L
+
+    fun durationMs(): Long =
+        controller?.duration?.takeIf { it != C.TIME_UNSET } ?: 0L
+
+    fun seekTo(positionMs: Long) { controller?.seekTo(positionMs) }
 
     fun disconnect() { controller?.release() }
 

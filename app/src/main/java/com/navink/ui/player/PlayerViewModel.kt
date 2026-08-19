@@ -8,6 +8,7 @@ import com.navink.data.repository.SettingsRepository
 import com.navink.player.PlayerController
 import com.navink.player.PlayerState
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -34,6 +35,12 @@ class PlayerViewModel @Inject constructor(
     private val _isCurrentSongDownloaded = MutableStateFlow(false)
     val isCurrentSongDownloaded: StateFlow<Boolean> = _isCurrentSongDownloaded.asStateFlow()
 
+    private val _positionMs = MutableStateFlow(0L)
+    val positionMs: StateFlow<Long> = _positionMs.asStateFlow()
+
+    private val _durationMs = MutableStateFlow(0L)
+    val durationMs: StateFlow<Long> = _durationMs.asStateFlow()
+
     init {
         viewModelScope.launch {
             var prevSongId: String? = null
@@ -41,6 +48,7 @@ class PlayerViewModel @Inject constructor(
                 if (s.currentSongId != prevSongId) {
                     _isDownloadingCurrentSong.value = false
                     prevSongId = s.currentSongId
+                    _durationMs.value = playerController.durationMs()
                 }
             }
         }
@@ -48,6 +56,15 @@ class PlayerViewModel @Inject constructor(
             combine(playerController.state, musicRepository.downloadedSongs()) { playerState, downloaded ->
                 downloaded.any { it.id == playerState.currentSongId }
             }.collect { _isCurrentSongDownloaded.value = it }
+        }
+        viewModelScope.launch {
+            while (true) {
+                if (state.value.isPlaying) {
+                    _positionMs.value = playerController.currentPositionMs()
+                    _durationMs.value = playerController.durationMs()
+                }
+                delay(500)
+            }
         }
     }
 
@@ -84,4 +101,15 @@ class PlayerViewModel @Inject constructor(
     fun playPause() = playerController.playPause()
     fun next() = playerController.next()
     fun previous() = playerController.previous()
+
+    fun seekTo(fraction: Float) {
+        val target = seekTargetMs(fraction, _durationMs.value)
+        playerController.seekTo(target)
+        _positionMs.value = target
+    }
+
+    companion object {
+        fun seekTargetMs(fraction: Float, durationMs: Long): Long =
+            (fraction.coerceIn(0f, 1f) * durationMs).toLong().coerceIn(0L, durationMs)
+    }
 }
